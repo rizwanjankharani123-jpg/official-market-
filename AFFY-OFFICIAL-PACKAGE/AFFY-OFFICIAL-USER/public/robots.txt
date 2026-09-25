@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://affyofficial.dev/sitemap.xml
