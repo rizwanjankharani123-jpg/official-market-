@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import crypto from 'crypto';
@@ -7,33 +8,6 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json());
-
-// Server-Side Master Administrator Credentials
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'affyofficial.dev@gmail.com').trim().toLowerCase();
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'AftabxR4ees1122';
-
-// In-Memory Secure Session Store
-interface AdminSession {
-  token: string;
-  email: string;
-  createdAt: number;
-  expiresAt: number;
-}
-
-const activeSessions = new Map<string, AdminSession>();
-
-// Session timeout: 12 hours
-const SESSION_DURATION_MS = 12 * 60 * 60 * 1000;
-
-// Helper: Clean up expired sessions periodically
-setInterval(() => {
-  const now = Date.now();
-  for (const [token, session] of activeSessions.entries()) {
-    if (session.expiresAt <= now) {
-      activeSessions.delete(token);
-    }
-  }
-}, 15 * 60 * 1000);
 
 // Helper to extract Bearer token
 function getBearerToken(req: express.Request): string | null {
@@ -52,6 +26,17 @@ function getBearerToken(req: express.Request): string | null {
 
 // 1. POST /api/admin/login
 app.post('/api/admin/login', (req, res) => {
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL ? process.env.ADMIN_EMAIL.trim().toLowerCase() : '';
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ? String(process.env.ADMIN_PASSWORD) : '';
+  const ADMIN_SECRET = process.env.ADMIN_SESSION_SECRET || ADMIN_PASSWORD;
+
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server configuration error: Administrator credentials not configured in environment variables.'
+    });
+  }
+
   const { email, password } = req.body || {};
 
   if (!email || !password) {
@@ -64,37 +49,51 @@ app.post('/api/admin/login', (req, res) => {
   const normalizedEmail = String(email).trim().toLowerCase();
   const providedPassword = String(password);
 
-  // Strict verification: only exact email and exact password
-  if (normalizedEmail !== ADMIN_EMAIL || providedPassword !== ADMIN_PASSWORD) {
-    // Return standard generic error - do NOT reveal which credential was incorrect
+  // Secure constant-time comparison for password
+  const emailMatch = normalizedEmail === ADMIN_EMAIL;
+  let passwordMatch = false;
+  if (providedPassword.length === ADMIN_PASSWORD.length) {
+    passwordMatch = crypto.timingSafeEqual(Buffer.from(providedPassword), Buffer.from(ADMIN_PASSWORD));
+  }
+
+  if (!emailMatch || !passwordMatch) {
     return res.status(401).json({
       success: false,
       message: 'Invalid admin credentials'
     });
   }
 
-  // Generate a cryptographically secure 256-bit session token
-  const token = crypto.randomBytes(32).toString('hex');
-  const now = Date.now();
-  const session: AdminSession = {
-    token,
-    email: ADMIN_EMAIL,
-    createdAt: now,
-    expiresAt: now + SESSION_DURATION_MS
-  };
-
-  activeSessions.set(token, session);
+  // Generate cryptographically secure HMAC-SHA256 session token (12 hours)
+  const expiresAt = Date.now() + 12 * 60 * 60 * 1000;
+  const nonce = crypto.randomBytes(16).toString('hex');
+  const payload = { email: ADMIN_EMAIL, expiresAt, nonce };
+  const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const signature = crypto
+    .createHmac('sha256', ADMIN_SECRET)
+    .update(payloadBase64)
+    .digest('base64url');
+  const token = `${payloadBase64}.${signature}`;
 
   return res.json({
     success: true,
     token,
     email: ADMIN_EMAIL,
-    expiresAt: session.expiresAt
+    expiresAt
   });
 });
 
 // 2. GET /api/admin/verify (Verify existing session token)
 app.get('/api/admin/verify', (req, res) => {
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL ? process.env.ADMIN_EMAIL.trim().toLowerCase() : '';
+  const ADMIN_SECRET = process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD || '';
+
+  if (!ADMIN_EMAIL || !ADMIN_SECRET) {
+    return res.status(500).json({
+      valid: false,
+      message: 'Server configuration error: Administrator credentials not configured in environment variables.'
+    });
+  }
+
   const token = getBearerToken(req) || (req.query.token as string);
 
   if (!token) {
@@ -104,28 +103,63 @@ app.get('/api/admin/verify', (req, res) => {
     });
   }
 
-  const session = activeSessions.get(token);
-  if (!session || session.expiresAt <= Date.now()) {
-    if (session) activeSessions.delete(token);
+  const parts = token.split('.');
+  if (parts.length !== 2) {
     return res.status(401).json({
       valid: false,
-      message: 'Admin session has expired or is invalid'
+      message: 'Invalid token structure'
     });
   }
 
-  return res.json({
-    valid: true,
-    email: session.email,
-    expiresAt: session.expiresAt
-  });
+  const [payloadBase64, signature] = parts;
+  const expectedSignature = crypto
+    .createHmac('sha256', ADMIN_SECRET)
+    .update(payloadBase64)
+    .digest('base64url');
+
+  if (
+    signature.length !== expectedSignature.length ||
+    !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))
+  ) {
+    return res.status(401).json({
+      valid: false,
+      message: 'Invalid token signature'
+    });
+  }
+
+  try {
+    const payloadStr = Buffer.from(payloadBase64, 'base64url').toString('utf-8');
+    const payload = JSON.parse(payloadStr);
+
+    if (payload.expiresAt <= Date.now()) {
+      return res.status(401).json({
+        valid: false,
+        message: 'Admin session has expired'
+      });
+    }
+
+    if (String(payload.email).toLowerCase() !== ADMIN_EMAIL) {
+      return res.status(401).json({
+        valid: false,
+        message: 'Admin identity mismatch'
+      });
+    }
+
+    return res.json({
+      valid: true,
+      email: payload.email,
+      expiresAt: payload.expiresAt
+    });
+  } catch {
+    return res.status(401).json({
+      valid: false,
+      message: 'Failed to verify session payload'
+    });
+  }
 });
 
 // 3. POST /api/admin/logout (Invalidate session token)
-app.post('/api/admin/logout', (req, res) => {
-  const token = getBearerToken(req) || req.body?.token;
-  if (token) {
-    activeSessions.delete(token);
-  }
+app.post('/api/admin/logout', (_req, res) => {
   return res.json({ success: true, message: 'Logged out successfully' });
 });
 
@@ -133,7 +167,7 @@ app.post('/api/admin/logout', (req, res) => {
 // SECURE DOWNLOAD AUTHORIZATION ROUTE
 // -------------------------------------------------------------
 app.post('/api/downloads/verify', (req, res) => {
-  const { orderId, customerEmail, purchaseType, orderStatus } = req.body || {};
+  const { orderId, customerEmail, orderStatus } = req.body || {};
 
   if (!orderId || !customerEmail) {
     return res.status(400).json({

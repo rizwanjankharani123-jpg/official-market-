@@ -44,7 +44,7 @@ import { CertificateModal } from './components/documents/CertificateModal';
 import { OpeningAnimation } from './components/common/OpeningAnimation';
 
 // Admin CMS
-import { AdminLoginModal } from './components/admin/AdminLoginModal';
+import { AdminLoginModal, AdminLoginForm } from './components/admin/AdminLoginModal';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { Product, ProductBundle, PurchaseType } from './types';
 import { updatePageSEO } from './utils/seo';
@@ -445,41 +445,12 @@ const MainAppContent: React.FC = () => {
                 onOpenCertificate={(id) => setSelectedCertOrderId(id)}
               />
             ) : (
-              /* Unauthenticated visitor navigating to /admin */
-              <div className="py-20 px-4 max-w-lg mx-auto text-center animate-in fade-in duration-300">
-                <div className="p-8 sm:p-10 rounded-3xl bg-[#090d16] border border-cyan-500/30 shadow-2xl shadow-cyan-950/40 space-y-6 text-left">
-                  <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center justify-center">
-                    <Lock className="w-7 h-7" />
-                  </div>
-
-                  <div className="space-y-2">
-                    <span className="px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 font-mono text-[10px] font-bold tracking-wider uppercase border border-cyan-500/30">
-                      Restricted Zone
-                    </span>
-                    <h2 className="text-2xl font-bold text-white font-mono">Admin Login Required</h2>
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                      This console manages product inventory, manual payment verifications, customer invoices, and system configurations. Please sign in with authorized administrator credentials.
-                    </p>
-                  </div>
-
-                  <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row items-center gap-3">
-                    <button
-                      onClick={() => setIsAdminLoginOpen(true)}
-                      className="w-full sm:w-auto flex-1 py-3 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs font-mono flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-cyan-500/20 transition-colors"
-                    >
-                      <ShieldCheck className="w-4 h-4 text-black" />
-                      <span>Admin Login</span>
-                    </button>
-
-                    <button
-                      onClick={() => setActiveView('home')}
-                      className="w-full sm:w-auto py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-mono flex items-center justify-center gap-1.5 cursor-pointer border border-white/10 transition-colors"
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5" />
-                      <span>Return Home</span>
-                    </button>
-                  </div>
-                </div>
+              /* Direct Secret Admin Login Screen */
+              <div className="py-12 sm:py-20 px-3 sm:px-4 max-w-lg mx-auto animate-in fade-in duration-300">
+                <AdminLoginForm
+                  onSuccess={() => {}}
+                  onCancel={() => setActiveView('home')}
+                />
               </div>
             )}
           </div>
