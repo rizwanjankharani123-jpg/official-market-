@@ -2,14 +2,22 @@
 User-agent: *
 Allow: /
 Allow: /#software
+Allow: /#free-apps
+Allow: /#bundles
+Allow: /#deals
+Allow: /#campaigns
+Allow: /#giveaways
+Allow: /#announcements
+Allow: /#request-software
 Allow: /#source-code
 Allow: /#about
 Allow: /#portfolio
 Allow: /#services
 Allow: /#contact
-Allow: /#track-order
 Allow: /#terms
 Disallow: /admin
 Disallow: /api/admin/
+Disallow: /api/downloads/
 
-Sitemap: https://ais-dev-gmagasdqqn4hfo7rsw44ms-679193230496.asia-southeast1.run.app/sitemap.xml
+Sitemap: https://affy-official.vercel.app/sitemap.xml
+

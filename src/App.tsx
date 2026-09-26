@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/common/Navbar';
 import { Footer } from './components/common/Footer';
-import { ZipExportModal } from './components/common/ZipExportModal';
 
 // Portfolio Sections
 import { HeroSection } from './components/portfolio/HeroSection';
@@ -81,7 +80,6 @@ const MainAppContent: React.FC = () => {
   const [selectedCertOrderId, setSelectedCertOrderId] = useState<string | null>(null);
 
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
-  const [isZipModalOpen, setIsZipModalOpen] = useState(false);
 
   // Track order view pre-filled state
   const [trackingOrderId, setTrackingOrderId] = useState<string>('');
@@ -149,7 +147,7 @@ const MainAppContent: React.FC = () => {
       )}
 
       {/* Top Main Navigation */}
-      <Navbar onOpenZipModal={() => setIsZipModalOpen(true)} />
+      <Navbar />
 
       {/* Main View Router */}
       <main className="flex-1 w-full">
@@ -402,7 +400,6 @@ const MainAppContent: React.FC = () => {
               <AdminDashboard
                 onOpenInvoice={(id) => setSelectedInvoiceOrderId(id)}
                 onOpenCertificate={(id) => setSelectedCertOrderId(id)}
-                onOpenZipModal={() => setIsZipModalOpen(true)}
               />
             ) : (
               /* Unauthenticated visitor navigating to /admin */
@@ -447,7 +444,7 @@ const MainAppContent: React.FC = () => {
       </main>
 
       {/* Global Footer */}
-      <Footer onOpenZipModal={() => setIsZipModalOpen(true)} />
+      <Footer />
 
       {/* MODALS */}
       {/* 1. Product Detail Modal */}
@@ -490,12 +487,6 @@ const MainAppContent: React.FC = () => {
           setActiveView('admin');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
-      />
-
-      {/* 6. Standalone ZIP Export Modal */}
-      <ZipExportModal
-        isOpen={isZipModalOpen}
-        onClose={() => setIsZipModalOpen(false)}
       />
     </div>
   );

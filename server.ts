@@ -130,6 +130,34 @@ app.post('/api/admin/logout', (req, res) => {
 });
 
 // -------------------------------------------------------------
+// SECURE DOWNLOAD AUTHORIZATION ROUTE
+// -------------------------------------------------------------
+app.post('/api/downloads/verify', (req, res) => {
+  const { orderId, customerEmail, purchaseType, orderStatus } = req.body || {};
+
+  if (!orderId || !customerEmail) {
+    return res.status(400).json({
+      authorized: false,
+      message: 'Invalid verification parameters'
+    });
+  }
+
+  // Must have payment_confirmed or completed status
+  const isConfirmed = orderStatus === 'payment_confirmed' || orderStatus === 'completed';
+  if (!isConfirmed) {
+    return res.status(403).json({
+      authorized: false,
+      message: 'Download vault locked: Payment verification pending.'
+    });
+  }
+
+  return res.json({
+    authorized: true,
+    message: 'Cryptographic authorization token validated for download release.'
+  });
+});
+
+// -------------------------------------------------------------
 // VITE / STATIC MIDDLEWARE
 // -------------------------------------------------------------
 

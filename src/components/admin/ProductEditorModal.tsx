@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Product } from '../../types';
+import { uploadFileToFirebaseStorage } from '../../lib/firebase';
 
 type ProductCategory = 'Android App' | 'Desktop Software' | 'Web Platform' | 'Full Stack System' | 'API & Backend' | 'Utility Tool';
 type LicenseType = 'Standard Commercial' | 'Extended Multi-Client' | 'Single App License' | 'Personal Educational';
@@ -24,7 +25,8 @@ import {
   Info,
   ExternalLink,
   Cpu,
-  Loader2
+  Loader2,
+  Globe
 } from 'lucide-react';
 
 interface ProductEditorModalProps {
@@ -54,13 +56,16 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
     features: ['Native Performance', 'Offline Database Support', 'Clean Architecture'],
     requirements: ['Android 8.0+ / Modern Web Browser'],
     includedFiles: ['Compiled APK / Executable', 'Documentation & Setup Guide'],
-    demoImages: ['https://images.unsplash.com/photo-1556742049-0a67c5574f73?auto=format&fit=crop&w=800&q=80'],
-    apkUrl: 'https://example.com/download/app.apk',
-    apkSize: '24.5 MB',
+    demoImages: [],
+    apkUrl: '',
+    apkSize: '',
+    apkPreviewUrl: '',
+    websitePreviewUrl: '',
+    previewEnabled: true,
     sourceAvailable: true,
-    sourcePrice: 149,
-    sourceZipUrl: 'https://example.com/download/source.zip',
-    sourceSize: '15.2 MB',
+    sourcePrice: 1500,
+    sourceZipUrl: '',
+    sourceSize: '',
     techStack: ['Kotlin', 'React', 'Node.js', 'PostgreSQL'],
     licenseType: 'Standard Commercial',
     licenseTerms: 'Commercial deployment rights included for single or multi-client projects.',
@@ -78,7 +83,9 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Upload simulation states
+  // Real upload states
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [coverUploadProgress, setCoverUploadProgress] = useState(0);
   const [apkUploading, setApkUploading] = useState(false);
   const [apkUploadProgress, setApkUploadProgress] = useState(0);
   const [sourceUploading, setSourceUploading] = useState(false);
@@ -92,98 +99,113 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Primary cover image file upload reader
-  const handleCoverFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Real cover image file upload to Firebase Storage
+  const handleCoverFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMessage('Cover image must be under 5MB');
+    if (file.size > 15 * 1024 * 1024) {
+      setErrorMessage('Cover image must be under 15MB');
       return;
     }
     setErrorMessage('');
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const dataUrl = reader.result as string;
+    setCoverUploading(true);
+    setCoverUploadProgress(0);
+
+    try {
+      const { downloadUrl } = await uploadFileToFirebaseStorage(
+        file,
+        'products/covers',
+        (progress) => setCoverUploadProgress(progress)
+      );
+
       const updatedImages = [...(formData.demoImages || [])];
       if (updatedImages.length > 0) {
-        updatedImages[0] = dataUrl;
+        updatedImages[0] = downloadUrl;
       } else {
-        updatedImages.push(dataUrl);
+        updatedImages.push(downloadUrl);
       }
-      setFormData({ ...formData, demoImages: updatedImages });
-    };
-    reader.readAsDataURL(file);
+      setFormData((prev) => ({ ...prev, demoImages: updatedImages }));
+    } catch (err: any) {
+      setErrorMessage('Image upload failed: ' + (err.message || 'Unknown error'));
+    } finally {
+      setCoverUploading(false);
+    }
   };
 
-  // Screenshots gallery multi-file upload reader
-  const handleGalleryFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Real gallery screenshots multi-file upload to Firebase Storage
+  const handleGalleryFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file) => {
-      if (file.size > 5 * 1024 * 1024) return;
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = reader.result as string;
+    setErrorMessage('');
+    for (const file of Array.from(files)) {
+      if (file.size > 15 * 1024 * 1024) continue;
+      try {
+        const { downloadUrl } = await uploadFileToFirebaseStorage(file, 'products/gallery');
         setFormData((prev) => ({
           ...prev,
-          demoImages: [...(prev.demoImages || []), dataUrl]
+          demoImages: [...(prev.demoImages || []), downloadUrl]
         }));
-      };
-      reader.readAsDataURL(file);
-    });
+      } catch (err) {
+        console.warn('Gallery item upload error:', err);
+      }
+    }
   };
 
-  // APK file upload handler with simulated progress & size calculation
-  const handleApkFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Real APK file upload handler with Firebase Storage
+  const handleApkFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const sizeMb = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
+    setErrorMessage('');
     setApkUploading(true);
-    setApkUploadProgress(10);
+    setApkUploadProgress(0);
 
-    const interval = setInterval(() => {
-      setApkUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setApkUploading(false);
-          setFormData((f) => ({
-            ...f,
-            apkSize: sizeMb,
-            apkUrl: f.apkUrl || `https://storage.affyofficial.com/builds/${file.name}`
-          }));
-          return 100;
-        }
-        return prev + 30;
-      });
-    }, 150);
+    try {
+      const { downloadUrl, fileSize } = await uploadFileToFirebaseStorage(
+        file,
+        'products/builds',
+        (progress) => setApkUploadProgress(progress)
+      );
+
+      setFormData((prev) => ({
+        ...prev,
+        apkSize: fileSize,
+        apkUrl: downloadUrl
+      }));
+    } catch (err: any) {
+      setErrorMessage('APK upload failed: ' + (err.message || 'Unknown error'));
+    } finally {
+      setApkUploading(false);
+    }
   };
 
-  // Source Code ZIP upload handler with simulated progress & size calculation
-  const handleSourceZipSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Real Source Code ZIP upload handler with Firebase Storage
+  const handleSourceZipSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const sizeMb = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
+    setErrorMessage('');
     setSourceUploading(true);
-    setSourceUploadProgress(10);
+    setSourceUploadProgress(0);
 
-    const interval = setInterval(() => {
-      setSourceUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setSourceUploading(false);
-          setFormData((f) => ({
-            ...f,
-            sourceSize: sizeMb,
-            sourceZipUrl: f.sourceZipUrl || `https://storage.affyofficial.com/source/${file.name}`
-          }));
-          return 100;
-        }
-        return prev + 30;
-      });
-    }, 150);
+    try {
+      const { downloadUrl, fileSize } = await uploadFileToFirebaseStorage(
+        file,
+        'products/source',
+        (progress) => setSourceUploadProgress(progress)
+      );
+
+      setFormData((prev) => ({
+        ...prev,
+        sourceSize: fileSize,
+        sourceZipUrl: downloadUrl
+      }));
+    } catch (err: any) {
+      setErrorMessage('Source ZIP upload failed: ' + (err.message || 'Unknown error'));
+    } finally {
+      setSourceUploading(false);
+    }
   };
 
   const handleAddFeature = () => {
@@ -496,6 +518,56 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                   placeholder={'1. Complete source code included\n2. Clean and organized project structure\n3. Easy to customize\n4. Included project files and schemas\n5. Standard commercial license included'}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-indigo-500 focus:outline-none leading-relaxed"
                 />
+              </div>
+
+              {/* Optional Preview / Demo Links (Phase 9) */}
+              <div className="p-4 rounded-2xl bg-[#070b14] border border-cyan-500/20 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono text-cyan-300 font-bold flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Live Preview & Demo Links (Optional)</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs font-mono text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.previewEnabled ?? true}
+                      onChange={(e) => setFormData({ ...formData, previewEnabled: e.target.checked })}
+                      className="rounded text-cyan-500"
+                    />
+                    <span>Show Previews</span>
+                  </label>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Optional public demo links for buyers to inspect the product live. If empty, the demo button is hidden.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-mono text-slate-400 mb-1">
+                      Website / Web App Preview URL
+                    </label>
+                    <input
+                      type="url"
+                      value={formData.websitePreviewUrl || ''}
+                      onChange={(e) => setFormData({ ...formData, websitePreviewUrl: e.target.value })}
+                      placeholder="https://preview.example.com"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono text-slate-400 mb-1">
+                      APK / Video / Demo Link
+                    </label>
+                    <input
+                      type="url"
+                      value={formData.apkPreviewUrl || ''}
+                      onChange={(e) => setFormData({ ...formData, apkPreviewUrl: e.target.value })}
+                      placeholder="https://youtube.com/watch?v=... or direct demo"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           )}

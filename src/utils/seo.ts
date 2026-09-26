@@ -127,6 +127,25 @@ export function updatePageSEO(view: string, product?: Product | null) {
   setMeta('twitter:description', description);
   setMeta('twitter:image', ogImage);
 
+  // Strict SEO Access: Exclude admin routes from indexing
+  if (view === 'admin') {
+    setMeta('robots', 'noindex, nofollow, noarchive');
+  } else {
+    setMeta('robots', 'index, follow');
+  }
+
+  // Canonical link tag update
+  let canonicalLink = document.querySelector('link[rel="canonical"]');
+  if (!canonicalLink) {
+    canonicalLink = document.createElement('link');
+    canonicalLink.setAttribute('rel', 'canonical');
+    document.head.appendChild(canonicalLink);
+  }
+  const canonicalUrl = view === 'home' || !view
+    ? 'https://affy-official.vercel.app/'
+    : `https://affy-official.vercel.app/#${view}`;
+  canonicalLink.setAttribute('href', canonicalUrl);
+
   // Update Product Structured Data if product is selected
   let productScript = document.getElementById('product-schema');
   if (product) {

@@ -64,6 +64,9 @@ export interface Product {
   includedFiles: string[];
   apkUrl?: string;
   apkSize?: string;
+  apkPreviewUrl?: string;       // Optional live APK demo/preview link
+  websitePreviewUrl?: string;   // Optional live website/web app preview link
+  previewEnabled?: boolean;     // Whether preview button is enabled
   // Source Code Details
   sourceAvailable: boolean;
   sourcePrice?: number;

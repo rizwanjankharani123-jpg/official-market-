@@ -23,7 +23,10 @@ import {
   TrendingUp,
   Clock,
   ShoppingCart,
-  Heart
+  Heart,
+  Globe,
+  ExternalLink,
+  Play
 } from 'lucide-react';
 
 interface ProductDetailModalProps {
@@ -174,6 +177,37 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           </div>
           <h2 className="text-2xl sm:text-3xl font-black text-white">{product.name}</h2>
           <p className="text-sm text-slate-300">{product.shortDescription}</p>
+
+          {/* Optional Live Demo / Preview Action Buttons */}
+          {product.previewEnabled !== false && (product.websitePreviewUrl || product.apkPreviewUrl) && (
+            <div className="flex flex-wrap items-center gap-2.5 pt-2">
+              {product.websitePreviewUrl && product.websitePreviewUrl.trim().length > 0 && (
+                <a
+                  href={product.websitePreviewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 text-xs font-mono font-bold transition-all shadow-sm shadow-cyan-500/10 group"
+                >
+                  <Globe className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
+                  <span>Live Web Preview / Demo</span>
+                  <ExternalLink className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100" />
+                </a>
+              )}
+
+              {product.apkPreviewUrl && product.apkPreviewUrl.trim().length > 0 && (
+                <a
+                  href={product.apkPreviewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 text-xs font-mono font-bold transition-all shadow-sm shadow-emerald-500/10 group"
+                >
+                  <Play className="w-4 h-4 text-emerald-400 fill-emerald-400 group-hover:scale-110 transition-transform" />
+                  <span>App Demo / Video</span>
+                  <ExternalLink className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100" />
+                </a>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Screenshot Gallery Carousel */}
