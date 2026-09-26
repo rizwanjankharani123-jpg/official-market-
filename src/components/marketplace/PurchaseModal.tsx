@@ -157,8 +157,8 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
   const pointsEarned = Math.floor((currentPrice || 0) / 100) * (settings.rewardPointsPer100PKR || 1);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-[#090d16] border border-cyan-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-cyan-950/60 text-slate-200 my-8 max-h-[90vh] overflow-y-auto text-left">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+      <div className="relative w-full max-w-2xl bg-[#090d16] border border-cyan-500/30 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-2xl shadow-cyan-950/60 text-slate-200 my-4 sm:my-8 max-h-[92vh] overflow-y-auto text-left">
         {/* Close Button */}
         <button
           onClick={onClose}

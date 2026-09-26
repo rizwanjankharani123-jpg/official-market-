@@ -85,15 +85,41 @@ const MainAppContent: React.FC = () => {
   const [trackingOrderId, setTrackingOrderId] = useState<string>('');
   const [trackingEmail, setTrackingEmail] = useState<string>('');
 
-  // Handle URL route sync (e.g. /admin or #admin)
+  // Handle comprehensive URL route sync on boot & navigation (e.g. /admin, /#admin, ?view=admin, etc.)
   useEffect(() => {
     const checkRoute = () => {
-      const path = window.location.pathname.replace(/^\//, '').toLowerCase();
+      const pathname = window.location.pathname.replace(/^\/+/, '').replace(/\/+$/, '').toLowerCase();
       const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase();
-      if (path === 'admin' || hash === 'admin') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const viewParam = searchParams.get('view')?.toLowerCase() || searchParams.get('page')?.toLowerCase();
+      const isAdminQuery = searchParams.get('admin') === 'true' || searchParams.get('admin') === '1';
+
+      // Check for admin routes
+      if (
+        pathname === 'admin' ||
+        pathname === 'affy-admin' ||
+        pathname === 'admin-portal' ||
+        pathname === 'secret-admin' ||
+        hash === 'admin' ||
+        hash === 'affy-admin' ||
+        viewParam === 'admin' ||
+        viewParam === 'affy-admin' ||
+        isAdminQuery
+      ) {
         setActiveView('admin');
+        return;
+      }
+
+      // Check for public section routes
+      if (hash && hash !== '') {
+        setActiveView(hash);
+      } else if (viewParam && viewParam !== '') {
+        setActiveView(viewParam);
+      } else if (pathname && pathname !== '' && pathname !== 'index.html') {
+        setActiveView(pathname);
       }
     };
+
     checkRoute();
     window.addEventListener('popstate', checkRoute);
     window.addEventListener('hashchange', checkRoute);
@@ -102,6 +128,23 @@ const MainAppContent: React.FC = () => {
       window.removeEventListener('hashchange', checkRoute);
     };
   }, [setActiveView]);
+
+  // Synchronize browser URL on view changes
+  useEffect(() => {
+    if (activeView === 'home') {
+      if (window.location.hash || window.location.pathname !== '/') {
+        window.history.replaceState(null, '', '/');
+      }
+    } else if (activeView === 'admin') {
+      if (window.location.pathname !== '/admin' && window.location.hash !== '#admin') {
+        window.history.replaceState(null, '', '/admin');
+      }
+    } else {
+      if (window.location.hash !== `#${activeView}`) {
+        window.history.replaceState(null, '', `/#${activeView}`);
+      }
+    }
+  }, [activeView]);
 
   // Synchronize SEO titles, meta tags, and structured data on view/product changes
   useEffect(() => {

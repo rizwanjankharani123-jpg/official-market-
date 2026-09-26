@@ -219,7 +219,7 @@ export const CustomerLibraryView: React.FC<CustomerLibraryViewProps> = ({
                           </div>
                         )}
 
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <button
                             onClick={() => onOpenCertificate(item.orderId)}
                             className="py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 text-xs font-mono transition-all flex items-center justify-center gap-1.5 cursor-pointer"

@@ -74,13 +74,11 @@ import {
 interface AdminDashboardProps {
   onOpenInvoice: (orderId: string) => void;
   onOpenCertificate: (orderId: string) => void;
-  onOpenZipModal?: () => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onOpenInvoice,
-  onOpenCertificate,
-  onOpenZipModal
+  onOpenCertificate
 }) => {
   const {
     orders,
@@ -476,16 +474,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <Globe className="w-3.5 h-3.5 text-cyan-400" />
             <span>View Public Store</span>
           </button>
-
-          {onOpenZipModal && (
-            <button
-              onClick={onOpenZipModal}
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 text-black font-extrabold text-xs font-mono transition-all flex items-center gap-1.5 shadow-md shadow-cyan-500/20 cursor-pointer"
-            >
-              <FolderArchive className="w-3.5 h-3.5 text-black" />
-              <span>Export Offline ZIP</span>
-            </button>
-          )}
 
           <button
             onClick={adminLogout}
