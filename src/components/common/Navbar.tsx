@@ -24,7 +24,11 @@ import {
   HelpCircle,
   FileText,
   User,
-  Phone
+  Phone,
+  Home,
+  CheckCircle2,
+  Zap,
+  Lock
 } from 'lucide-react';
 import { OFFICIAL_WHATSAPP_NUMBER } from '../../utils/notifications';
 import { NotificationCenterModal } from './NotificationCenterModal';
@@ -78,12 +82,87 @@ export const Navbar: React.FC = () => {
     { id: 'terms', label: 'Terms & Licensing 📜' },
   ];
 
-  // Complete list for mobile drawer
-  const allNavLinks = [
-    ...primaryNavLinks,
-    ...secondaryNavLinks,
-    { id: 'library', label: 'My Digital Vault 📚' },
-    { id: 'rewards', label: 'Customer Rewards 💎' },
+  // Core Marketplace Cards for Mobile
+  const coreMarketplaceCards = [
+    {
+      id: 'home',
+      label: 'Home',
+      icon: Home,
+      tag: 'Main',
+      color: 'from-cyan-500/20 to-blue-500/10 text-cyan-400 border-cyan-500/30'
+    },
+    {
+      id: 'software',
+      label: 'Software & APKs',
+      icon: Package,
+      tag: 'Verified',
+      color: 'from-blue-500/20 to-indigo-500/10 text-blue-400 border-blue-500/30'
+    },
+    {
+      id: 'free-apps',
+      label: 'Free Apps',
+      icon: Gift,
+      tag: '100% Free',
+      color: 'from-emerald-500/20 to-teal-500/10 text-emerald-400 border-emerald-500/30'
+    },
+    {
+      id: 'bundles',
+      label: 'Bundles',
+      icon: Layers,
+      tag: 'Save Big',
+      color: 'from-purple-500/20 to-indigo-500/10 text-purple-400 border-purple-500/30'
+    },
+    {
+      id: 'deals',
+      label: 'Deals & Offers',
+      icon: Flame,
+      tag: 'Hot',
+      color: 'from-amber-500/20 to-rose-500/10 text-amber-400 border-amber-500/30'
+    },
+    {
+      id: 'source-code',
+      label: 'Source Code',
+      icon: Code2,
+      tag: 'Licenses',
+      color: 'from-sky-500/20 to-cyan-500/10 text-sky-400 border-sky-500/30'
+    }
+  ];
+
+  // Retention & Services Items for Mobile
+  const customerHubItems = [
+    {
+      id: 'library',
+      label: 'My Digital Vault',
+      desc: 'Purchased files & licenses',
+      icon: FolderArchive,
+      badge: 'Library'
+    },
+    {
+      id: 'rewards',
+      label: 'Customer Rewards',
+      desc: 'Points, tier status & perks',
+      icon: Award,
+      badge: 'Rewards'
+    },
+    {
+      id: 'track-order',
+      label: 'Track Order & Invoices',
+      desc: 'Instant delivery tracking',
+      icon: Search,
+      badge: 'Orders'
+    }
+  ];
+
+  // Community & Portfolio Links for Mobile
+  const communityLinks = [
+    { id: 'campaigns', label: 'Events & Campaigns', icon: Calendar, tag: 'Live' },
+    { id: 'giveaways', label: 'Giveaways & Archive', icon: Gift, tag: 'Claim' },
+    { id: 'announcements', label: 'News & Bulletins', icon: Bell, tag: unreadAnnouncementsCount > 0 ? `${unreadAnnouncementsCount} New` : null },
+    { id: 'request-software', label: 'Request App / Feature', icon: Sparkles, tag: 'Request' },
+    { id: 'portfolio', label: 'Developer Portfolio', icon: Terminal, tag: 'Work' },
+    { id: 'about', label: 'About Aftab', icon: User, tag: 'Profile' },
+    { id: 'contact', label: 'Official Contact', icon: Phone, tag: 'Direct' },
+    { id: 'terms', label: 'Terms & Licensing', icon: ShieldCheck, tag: 'Legal' },
   ];
 
   const handleNavClick = (id: string) => {
@@ -279,7 +358,11 @@ export const Navbar: React.FC = () => {
             {/* Mobile menu hamburger button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg bg-slate-900 border border-white/10 text-slate-300 hover:text-white cursor-pointer"
+              className={`lg:hidden p-2 rounded-xl border transition-all cursor-pointer ${
+                mobileMenuOpen
+                  ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                  : 'bg-slate-900 text-slate-300 border-white/10 hover:text-white'
+              }`}
               aria-label="Toggle navigation menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -287,34 +370,161 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Mobile dropdown menu */}
+        {/* Enhanced Stylish Mobile Dropdown Drawer */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-b border-white/10 bg-[#07090e]/98 backdrop-blur-2xl px-3 sm:px-4 py-4 space-y-3 animate-in slide-in-from-top duration-150 max-h-[82vh] overflow-y-auto">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-              {allNavLinks.map((link) => (
-                <button
-                  key={link.id}
-                  onClick={() => handleNavClick(link.id)}
-                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium text-left transition-all cursor-pointer ${
-                    activeView === link.id
-                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold shadow-sm shadow-cyan-500/10'
-                      : 'bg-slate-900/70 text-slate-300 hover:bg-slate-800'
-                  }`}
-                >
-                  <span className="truncate">{link.label}</span>
-                  <ChevronRight className="w-3.5 h-3.5 opacity-60 shrink-0 ml-1" />
-                </button>
-              ))}
+          <div className="lg:hidden border-b border-white/10 bg-[#060810]/98 backdrop-blur-2xl px-3 sm:px-5 py-4 space-y-4 animate-in slide-in-from-top-2 duration-200 max-h-[85vh] overflow-y-auto shadow-2xl">
+            {/* Section 1: Core Marketplace Navigation Grid */}
+            <div>
+              <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/5">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-cyan-400 font-bold flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                  MARKETPLACE SECTIONS
+                </span>
+                <span className="text-[10px] font-mono text-slate-500">Quick Access</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {coreMarketplaceCards.map((card) => {
+                  const Icon = card.icon;
+                  const isActive = activeView === card.id;
+                  return (
+                    <button
+                      key={card.id}
+                      onClick={() => handleNavClick(card.id)}
+                      className={`relative p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[64px] ${
+                        isActive
+                          ? 'bg-gradient-to-br from-cyan-500/25 to-blue-600/20 border-cyan-400 text-white shadow-md shadow-cyan-500/15 font-bold'
+                          : `bg-slate-900/80 hover:bg-slate-800/90 border-white/10 text-slate-200`
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div className={`p-1.5 rounded-lg bg-white/5 ${isActive ? 'text-cyan-300' : 'text-slate-400'}`}>
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold border ${
+                          isActive
+                            ? 'bg-cyan-400/20 text-cyan-300 border-cyan-400/40'
+                            : 'bg-white/5 text-slate-400 border-white/5'
+                        }`}>
+                          {card.tag}
+                        </span>
+                      </div>
+                      <span className={`text-xs font-semibold mt-2 truncate ${isActive ? 'text-white' : 'text-slate-200'}`}>
+                        {card.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
+            {/* Section 2: User Digital Vault & Rewards Hub */}
+            <div className="bg-slate-900/60 rounded-2xl p-2.5 border border-white/5 space-y-1.5">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold px-1.5 flex items-center gap-1.5">
+                <FolderArchive className="w-3 h-3 text-indigo-400" />
+                CUSTOMER PORTAL & VAULT
+              </span>
+
+              <div className="grid grid-cols-1 gap-1">
+                {customerHubItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeView === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleNavClick(item.id)}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold'
+                          : 'bg-slate-950/40 hover:bg-slate-800 text-slate-300 border border-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="p-1 rounded-lg bg-white/5 text-cyan-400 shrink-0">
+                          <Icon className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="truncate">
+                          <p className="text-xs font-semibold text-white truncate">{item.label}</p>
+                          <p className="text-[10px] text-slate-400 truncate">{item.desc}</p>
+                        </div>
+                      </div>
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-slate-400 shrink-0 ml-2">
+                        {item.badge}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Section 3: More Services & Developer Community */}
+            <div>
+              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold px-1 mb-1.5 block">
+                MORE SERVICES & COMMUNITY
+              </span>
+              <div className="grid grid-cols-2 gap-1.5">
+                {communityLinks.map((link) => {
+                  const Icon = link.icon;
+                  const isActive = activeView === link.id;
+                  return (
+                    <button
+                      key={link.id}
+                      onClick={() => handleNavClick(link.id)}
+                      className={`flex items-center justify-between px-2.5 py-2 rounded-xl text-[11px] font-medium transition-all cursor-pointer border ${
+                        isActive
+                          ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30 font-bold'
+                          : 'bg-slate-900/40 hover:bg-slate-800 text-slate-300 border-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 truncate">
+                        <Icon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">{link.label}</span>
+                      </div>
+                      {link.tag && (
+                        <span className={`text-[8px] font-mono px-1 rounded ml-1 shrink-0 ${
+                          link.tag.includes('New')
+                            ? 'bg-cyan-500 text-black font-bold'
+                            : 'bg-white/5 text-slate-400'
+                        }`}>
+                          {link.tag}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Section 4: Quick Action CTA Buttons */}
             <div className="pt-2 border-t border-white/10 flex flex-col gap-2">
               <button
                 onClick={() => handleNavClick('custom-project')}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-500 to-blue-600 text-black shadow-lg shadow-cyan-500/20 cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-extrabold bg-gradient-to-r from-cyan-500 via-sky-400 to-blue-600 text-black shadow-lg shadow-cyan-500/25 hover:brightness-110 transition-all cursor-pointer"
               >
                 <Sparkles className="w-4 h-4 text-black" />
-                <span>Start Your Custom Project</span>
+                <span>Start Custom Project</span>
+                <ChevronRight className="w-3.5 h-3.5 text-black" />
               </button>
+
+              <div className="flex items-center gap-2">
+                <a
+                  href={`https://wa.me/${OFFICIAL_WHATSAPP_NUMBER.replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Hi Aftab, I am reaching out from AFFY OFFICIAL.')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-[11px] font-mono font-semibold transition-all"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>WhatsApp Support</span>
+                </a>
+
+                <button
+                  onClick={() => handleNavClick('admin')}
+                  className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 text-[11px] font-mono transition-all cursor-pointer"
+                >
+                  <Lock className="w-3 h-3 text-cyan-400" />
+                  <span>Admin</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -328,3 +538,4 @@ export const Navbar: React.FC = () => {
     </>
   );
 };
+

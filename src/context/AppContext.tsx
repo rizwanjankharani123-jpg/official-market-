@@ -423,7 +423,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return {
         success: false,
-        error: data.error || 'Access denied: Invalid credentials.'
+        error: data.message || data.error || 'Access denied: Invalid credentials.'
       };
     } catch (e: any) {
       return {

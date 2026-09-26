@@ -1,4 +1,6 @@
 import crypto from 'crypto';
+import dotenv from 'dotenv';
+dotenv.config({ override: true });
 
 export default async function handler(req: any, res: any) {
   // CORS & Security Headers
