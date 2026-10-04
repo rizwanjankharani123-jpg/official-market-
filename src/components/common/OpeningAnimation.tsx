@@ -52,10 +52,9 @@ export const OpeningAnimation: React.FC<OpeningAnimationProps> = ({ onComplete }
         phase === 4 ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
-      {/* Background Matrix & Subtle Gradient Orbs */}
+      {/* Background Subtle Gradient Orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] sm:w-[600px] h-[350px] sm:h-[600px] rounded-full bg-gradient-to-tr from-cyan-500/15 via-blue-600/10 to-indigo-600/15 blur-3xl animate-pulse" />
-        <div className="absolute inset-0 bg-[radial-gradient(#06b6d4_1px,transparent_1px)] [background-size:24px_24px] opacity-15" />
       </div>
 
       <div className="relative z-10 flex flex-col items-center text-center px-4 max-w-lg w-full">

@@ -24,22 +24,16 @@ export const HeroSection: React.FC = () => {
   };
 
   return (
-    <section className="relative pt-12 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto overflow-hidden isolate">
-      {/* Background ambient lighting - Isolated GPU layers to prevent repaint thrashing */}
-      <div 
-        className="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-cyan-500/10 blur-[120px] rounded-full pointer-events-none transform-gpu will-change-transform" 
-        style={{ transform: 'translate3d(-50%, 0, 0)', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
-      />
-      <div 
-        className="absolute top-48 right-10 w-72 h-72 bg-indigo-600/10 blur-[90px] rounded-full pointer-events-none transform-gpu will-change-transform" 
-        style={{ transform: 'translate3d(0, 0, 0)', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
-      />
+    <section className="relative pt-12 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto overflow-hidden">
+      {/* Background ambient lighting */}
+      <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-cyan-500/10 blur-3xl rounded-full pointer-events-none" />
+      <div className="absolute top-48 right-10 w-64 h-64 bg-indigo-600/10 blur-3xl rounded-full pointer-events-none" />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
         {/* Left Column: Developer Identity & CTA */}
         <div className="lg:col-span-7 space-y-6 text-left">
-          {/* Status Badge - Isolated pulse stacking context */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/90 border border-cyan-500/30 shadow-sm shadow-cyan-500/10 isolate transform-gpu">
+          {/* Status Badge */}
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/90 border border-cyan-500/30 shadow-sm shadow-cyan-500/10">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
@@ -60,7 +54,7 @@ export const HeroSection: React.FC = () => {
                 CodeWithAffy
               </span>
             </div>
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.2] transform-gpu">
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.2]">
               {settings.developerTitle.split('&')[0]} &{' '}
               <span className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-indigo-400 py-0.5">
                 Software Engineer
@@ -73,9 +67,9 @@ export const HeroSection: React.FC = () => {
             {settings.heroSubheading || settings.bio}
           </p>
 
-          {/* Key Value Badges - Stabilized crisp borders & subpixel hardware acceleration */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1 isolate">
-            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-700/60 shadow-sm flex items-center gap-2.5 transform-gpu">
+          {/* Key Value Badges */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+            <div className="p-3 rounded-xl bg-slate-900 border border-slate-700/60 shadow-sm flex items-center gap-2.5">
               <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 shrink-0">
                 <ShieldCheck className="w-4 h-4" />
               </div>
@@ -85,7 +79,7 @@ export const HeroSection: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-700/60 shadow-sm flex items-center gap-2.5 transform-gpu">
+            <div className="p-3 rounded-xl bg-slate-900 border border-slate-700/60 shadow-sm flex items-center gap-2.5">
               <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 shrink-0">
                 <Code2 className="w-4 h-4" />
               </div>
@@ -95,7 +89,7 @@ export const HeroSection: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-700/60 shadow-sm flex items-center gap-2.5 col-span-2 sm:col-span-1 transform-gpu">
+            <div className="p-3 rounded-xl bg-slate-900 border border-slate-700/60 shadow-sm flex items-center gap-2.5 col-span-2 sm:col-span-1">
               <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 shrink-0">
                 <Zap className="w-4 h-4" />
               </div>
