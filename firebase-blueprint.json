@@ -1,0 +1,113 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Software, APK, Web App, or Source Code listing",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 200 },
+        "tagline": { "type": "string", "maxLength": 300 },
+        "description": { "type": "string", "maxLength": 5000 },
+        "category": { "type": "string", "maxLength": 64 },
+        "price": { "type": "number" },
+        "salePrice": { "type": "number" },
+        "apkPrice": { "type": "number" },
+        "sourcePrice": { "type": "number" },
+        "isFree": { "type": "boolean" },
+        "isApkFree": { "type": "boolean" },
+        "isSourceLocked": { "type": "boolean" },
+        "apkInstallType": { "type": "string", "enum": ["free", "paid", "none"] },
+        "livePreviewUrl": { "type": "string", "maxLength": 1000 },
+        "apkDownloadUrl": { "type": "string", "maxLength": 1000 },
+        "sourceZipUrl": { "type": "string", "maxLength": 1000 },
+        "demoImages": { "type": "array" },
+        "features": { "type": "array" },
+        "techStack": { "type": "array" },
+        "version": { "type": "string", "maxLength": 32 },
+        "updatedAt": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["name", "category"]
+    },
+    "PortfolioProject": {
+      "title": "PortfolioProject",
+      "description": "Live web showcase and client portfolio project",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string", "maxLength": 64 },
+        "description": { "type": "string", "maxLength": 5000 },
+        "liveUrl": { "type": "string", "maxLength": 1000 },
+        "sourceUrl": { "type": "string", "maxLength": 1000 },
+        "isSourceLocked": { "type": "boolean" },
+        "sourcePrice": { "type": "number" },
+        "imageUrl": { "type": "string", "maxLength": 1000 },
+        "screenshots": { "type": "array" },
+        "techStack": { "type": "array" }
+      },
+      "required": ["title", "category"]
+    },
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Store configuration and global settings",
+      "type": "object",
+      "properties": {
+        "storeName": { "type": "string", "maxLength": 128 },
+        "whatsappNumber": { "type": "string", "maxLength": 64 },
+        "supportEmail": { "type": "string", "maxLength": 128 }
+      }
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Software, Web and APK product catalog"
+    },
+    "/projects/{projectId}": {
+      "schema": "PortfolioProject",
+      "description": "Portfolio web projects and showcases"
+    },
+    "/settings/{settingId}": {
+      "schema": "SiteSettings",
+      "description": "Global settings and metadata"
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Customer purchase orders"
+    },
+    "/bundles/{bundleId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Product bundles"
+    },
+    "/announcements/{announcementId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Public updates and news"
+    },
+    "/deals/{dealId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Personalized discount deals"
+    },
+    "/campaigns/{campaignId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Limited time campaigns and events"
+    },
+    "/giveaways/{giveawayId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Community giveaway items"
+    },
+    "/custom_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Client custom project inquiries"
+    },
+    "/quotations/{quotationId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Price estimations and quotations"
+    },
+    "/payment_methods/{methodId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Available payment checkout gateways"
+    }
+  }
+}

@@ -1,17 +1,8 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { getFirestore, Firestore, doc, getDocFromServer } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
 import { getStorage, FirebaseStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-
-// Default Firebase Configuration for 'affy-official'
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAffyOfficialProductionKeyPlaceholder2026",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "affy-official.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "affy-official",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "affy-official.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "679193230496",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:679193230496:web:affyofficialproduction"
-};
+import firebaseConfig from '../../firebase-applet-config.json';
 
 let app: FirebaseApp;
 let db: Firestore;
@@ -20,17 +11,27 @@ let storage: FirebaseStorage;
 
 try {
   app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-  db = getFirestore(app);
+  db = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId);
   auth = getAuth(app);
   storage = getStorage(app);
 } catch (error) {
-  console.warn("Firebase initialization warning (falling back to offline resilient layer):", error);
-  // Re-attempt clean init
-  app = initializeApp(firebaseConfig, 'affy-official-fallback');
-  db = getFirestore(app);
+  console.warn("Firebase initialization warning (retrying):", error);
+  app = initializeApp(firebaseConfig, 'affy-official-primary');
+  db = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId);
   auth = getAuth(app);
   storage = getStorage(app);
 }
+
+// Test connectivity according to Firebase skill standard
+(async () => {
+  try {
+    await getDocFromServer(doc(db, '_connection_test', 'ping'));
+  } catch (error: any) {
+    if (error?.message && error.message.includes('the client is offline')) {
+      console.warn("Firestore connection notice:", error.message);
+    }
+  }
+})();
 
 export { app, db, auth, storage };
 

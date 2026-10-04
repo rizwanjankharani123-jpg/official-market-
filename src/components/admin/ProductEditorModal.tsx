@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Product } from '../../types';
 import { uploadFileToFirebaseStorage } from '../../lib/firebase';
+import { getSafeProductImage, CATEGORY_FALLBACK_IMAGES } from '../../utils/imageFallbacks';
 
 type ProductCategory = 'Android App' | 'Desktop Software' | 'Web Platform' | 'Full Stack System' | 'API & Backend' | 'Utility Tool';
 type LicenseType = 'Standard Commercial' | 'Extended Multi-Client' | 'Single App License' | 'Personal Educational';
@@ -285,8 +286,15 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
     setIsSubmitting(true);
     setErrorMessage('');
     try {
+      const safeCover = getSafeProductImage(formData.demoImages, formData.category);
+      const cleanedImages = (formData.demoImages || [])
+        .filter((img) => img && typeof img === 'string' && img.trim() !== '' && img !== 'null' && img !== 'undefined');
+      
+      const finalDemoImages = cleanedImages.length > 0 ? cleanedImages : [safeCover];
+
       const payload: Partial<Product> = {
         ...formData,
+        demoImages: finalDemoImages,
         featured: Boolean(formData.featured),
         pricingType: isFree ? 'free' : 'paid',
         price: isFree ? 0 : Number(formData.price || 0),
@@ -368,6 +376,105 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
           {/* TAB 1: GENERAL INFO */}
           {activeTab === 'general' && (
             <div className="space-y-4 animate-in fade-in">
+              {/* Quick Archetype Configuration Presets */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-950 via-[#070d1a] to-slate-950 border border-cyan-500/30 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono text-cyan-300 font-bold flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-cyan-400" />
+                    <span>Choose Product Distribution Archetype (1-Click Auto Setup)</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-400">Quick configuration presets</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        category: 'Web Platform',
+                        pricingType: 'paid',
+                        price: 2500,
+                        sourceAvailable: true,
+                        sourcePrice: 3500,
+                        previewEnabled: true,
+                        demoImages: formData.demoImages && formData.demoImages.length > 0 ? formData.demoImages : ['https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80']
+                      });
+                    }}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      formData.category === 'Web Platform'
+                        ? 'bg-cyan-500/15 border-cyan-400 text-white shadow-md shadow-cyan-500/10'
+                        : 'bg-slate-900 text-slate-400 border-white/5 hover:border-white/20 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 font-bold text-xs text-cyan-300 font-mono">
+                      <Globe className="w-3.5 h-3.5" />
+                      <span>🌐 Web Project</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1 leading-snug">
+                      Live Website Preview Link + Locked/Paid Web Source Code.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        category: 'Android App',
+                        pricingType: 'free',
+                        price: 0,
+                        sourceAvailable: true,
+                        sourcePrice: 2000,
+                        previewEnabled: true,
+                        demoImages: formData.demoImages && formData.demoImages.length > 0 ? formData.demoImages : ['https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=1200&q=80']
+                      });
+                    }}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      formData.category === 'Android App' && formData.pricingType === 'free'
+                        ? 'bg-emerald-500/15 border-emerald-400 text-white shadow-md shadow-emerald-500/10'
+                        : 'bg-slate-900 text-slate-400 border-white/5 hover:border-white/20 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 font-bold text-xs text-emerald-300 font-mono">
+                      <Smartphone className="w-3.5 h-3.5" />
+                      <span>🟢 Free APK + Paid Source</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1 leading-snug">
+                      Direct APK download is 100% Free. Source code is Locked & Paid.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        category: 'Android App',
+                        pricingType: 'paid',
+                        price: 3000,
+                        sourceAvailable: true,
+                        sourcePrice: 5000,
+                        previewEnabled: true,
+                        demoImages: formData.demoImages && formData.demoImages.length > 0 ? formData.demoImages : ['https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=1200&q=80']
+                      });
+                    }}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      formData.category === 'Android App' && formData.pricingType === 'paid' && (formData.price || 0) > 0
+                        ? 'bg-purple-500/15 border-purple-400 text-white shadow-md shadow-purple-500/10'
+                        : 'bg-slate-900 text-slate-400 border-white/5 hover:border-white/20 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 font-bold text-xs text-purple-300 font-mono">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>💎 Paid APK (Jarvis AI)</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1 leading-snug">
+                      Both APK Install and Source Code are Locked & Paid.
+                    </p>
+                  </button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-mono text-slate-300 mb-1">Product Title *</label>
@@ -614,6 +721,38 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                       <span>No cover image selected</span>
                     </div>
                   )}
+                </div>
+
+                {/* One-Click Presets */}
+                <div className="space-y-1.5 pt-2 border-t border-white/5">
+                  <p className="text-[11px] font-mono text-cyan-400 font-bold flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Quick HD Image Presets (Click to apply):</span>
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {[
+                      { label: '📱 Android App Mockup', url: 'https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=1200&q=80' },
+                      { label: '🌐 Web Platform / SaaS', url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80' },
+                      { label: '💻 Source Code / Tech', url: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=1200&q=80' },
+                      { label: '📊 Dashboard & Backend', url: 'https://images.unsplash.com/photo-1504639725590-34d0984388bd?auto=format&fit=crop&w=1200&q=80' },
+                      { label: '⚡ API Engine & Cloud', url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80' },
+                      { label: '🛒 POS & E-Commerce', url: 'https://images.unsplash.com/photo-1556742049-0a67c5574f73?auto=format&fit=crop&w=1200&q=80' },
+                    ].map((preset) => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => {
+                          const updated = [...(formData.demoImages || [])];
+                          if (updated.length > 0) updated[0] = preset.url;
+                          else updated.push(preset.url);
+                          setFormData({ ...formData, demoImages: updated });
+                        }}
+                        className="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 hover:border-cyan-500/30 text-[11px] font-mono text-left transition-all cursor-pointer truncate"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div>

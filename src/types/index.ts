@@ -32,7 +32,7 @@ export type RequestStatus =
 
 export type QuotationStatus = 'sent' | 'accepted' | 'rejected' | 'converted_to_order';
 
-export type PaymentMethodType = 'bank' | 'jazzcash' | 'easypaisa' | 'binance' | 'crypto' | 'custom';
+export type PaymentMethodType = 'bank' | 'jazzcash' | 'easypaisa' | 'binance' | 'crypto' | 'custom' | 'other' | 'bank_transfer';
 
 export interface VersionRelease {
   version: string;

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Product, PurchaseType } from '../../types';
+import { getSafeProductImage, CATEGORY_FALLBACK_IMAGES } from '../../utils/imageFallbacks';
 import {
   Flame,
   Sparkles,
@@ -155,11 +156,15 @@ export const TrendingProducts: React.FC<TrendingProductsProps> = ({
                   className="relative aspect-[16/10] bg-slate-950 overflow-hidden cursor-pointer"
                 >
                   <img
-                    src={
-                      product.demoImages[0] ||
-                      'https://images.unsplash.com/photo-1556742049-0a67c5574f73?auto=format&fit=crop&w=800&q=80'
-                    }
+                    src={getSafeProductImage(product.demoImages, product.category)}
                     alt={product.name}
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      const fallback = CATEGORY_FALLBACK_IMAGES[product.category] || CATEGORY_FALLBACK_IMAGES['default'];
+                      if (target.src !== fallback) {
+                        target.src = fallback;
+                      }
+                    }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#090d16] via-transparent to-transparent opacity-90" />

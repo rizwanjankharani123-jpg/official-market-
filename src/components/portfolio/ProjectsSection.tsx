@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { AftabAvatar } from '../common/AftabAvatar';
 import { Layers, ExternalLink, Github, Sparkles, FolderGit2, ArrowUpRight, ShieldCheck } from 'lucide-react';
+import { getSafeProjectImage, CATEGORY_FALLBACK_IMAGES } from '../../utils/imageFallbacks';
 
 export const ProjectsSection: React.FC = () => {
   const { projects, setActiveView } = useApp();
@@ -76,8 +77,15 @@ export const ProjectsSection: React.FC = () => {
               {/* Image Preview */}
               <div className="relative aspect-video overflow-hidden bg-slate-950">
                 <img
-                  src={project.image}
+                  src={getSafeProjectImage(project.image, project.category)}
                   alt={project.title}
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    const fallback = CATEGORY_FALLBACK_IMAGES[project.category] || CATEGORY_FALLBACK_IMAGES['default'];
+                    if (target.src !== fallback) {
+                      target.src = fallback;
+                    }
+                  }}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#090d16] via-transparent to-transparent opacity-80" />

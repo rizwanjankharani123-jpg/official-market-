@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Product } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { StructuredContentRenderer } from '../common/StructuredContentRenderer';
+import { getSafeProductImage, CATEGORY_FALLBACK_IMAGES } from '../../utils/imageFallbacks';
 import {
   X,
   ShieldCheck,
@@ -211,44 +212,49 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         </div>
 
         {/* Screenshot Gallery Carousel */}
-        {product.demoImages.length > 0 && (
-          <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-[16/9] mb-8 border border-white/10 group">
-            <img
-              src={product.demoImages[activeImageIndex]}
-              alt={`${product.name} screenshot ${activeImageIndex + 1}`}
-              className="w-full h-full object-cover"
-            />
+        <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-[16/9] mb-8 border border-white/10 group">
+          <img
+            src={getSafeProductImage(product.demoImages && product.demoImages.length > 0 ? [product.demoImages[activeImageIndex]] : [], product.category)}
+            alt={`${product.name} screenshot`}
+            onError={(e) => {
+              const target = e.currentTarget;
+              const fallback = CATEGORY_FALLBACK_IMAGES[product.category] || CATEGORY_FALLBACK_IMAGES['default'];
+              if (target.src !== fallback) {
+                target.src = fallback;
+              }
+            }}
+            className="w-full h-full object-cover"
+          />
 
-            {product.demoImages.length > 1 && (
-              <>
-                <button
-                  onClick={prevImage}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/70 hover:bg-black text-white border border-white/20 transition-all opacity-80 hover:opacity-100"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={nextImage}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/70 hover:bg-black text-white border border-white/20 transition-all opacity-80 hover:opacity-100"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
+          {product.demoImages && product.demoImages.length > 1 && (
+            <>
+              <button
+                onClick={prevImage}
+                className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/70 hover:bg-black text-white border border-white/20 transition-all opacity-80 hover:opacity-100 cursor-pointer"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={nextImage}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/70 hover:bg-black text-white border border-white/20 transition-all opacity-80 hover:opacity-100 cursor-pointer"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
 
-                {/* Dots indicator */}
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md">
-                  {product.demoImages.map((_, i) => (
-                    <span
-                      key={i}
-                      className={`w-2 h-2 rounded-full transition-all ${
-                        activeImageIndex === i ? 'bg-cyan-400 w-5' : 'bg-white/40'
-                      }`}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        )}
+              {/* Dots indicator */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md">
+                {product.demoImages.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      activeImageIndex === i ? 'bg-cyan-400 w-5' : 'bg-white/40'
+                    }`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Detailed Sections Tabs */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">

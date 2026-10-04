@@ -370,9 +370,12 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Enhanced Stylish Mobile Dropdown Drawer */}
+        {/* Enhanced Stylish Mobile Dropdown Drawer (Isolated GPU Surface with Zero Tearing) */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-b border-white/10 bg-[#060810]/98 backdrop-blur-2xl px-3 sm:px-5 py-4 space-y-4 animate-in slide-in-from-top-2 duration-200 max-h-[85vh] overflow-y-auto shadow-2xl">
+          <div 
+            className="lg:hidden border-b border-cyan-500/20 bg-[#070a14] px-3 sm:px-5 py-4 space-y-4 max-h-[85vh] overflow-y-auto shadow-2xl isolate transform-gpu"
+            style={{ transform: 'translate3d(0, 0, 0)', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+          >
             {/* Section 1: Core Marketplace Navigation Grid */}
             <div>
               <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/5">

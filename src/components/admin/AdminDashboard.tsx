@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Order,
@@ -21,6 +21,7 @@ import { AnnouncementEditorModal } from './AnnouncementEditorModal';
 import { DealEditorModal } from './DealEditorModal';
 import { CampaignEditorModal } from './CampaignEditorModal';
 import { GiveawayEditorModal } from './GiveawayEditorModal';
+import { getSafeProductImage, CATEGORY_FALLBACK_IMAGES } from '../../utils/imageFallbacks';
 import {
   generateCustomerWhatsAppChatUrl,
   generateCustomerEmailUrl,
@@ -68,7 +69,12 @@ import {
   Send,
   Gift,
   Tag,
-  Calendar
+  Calendar,
+  Copy,
+  Check,
+  Smartphone,
+  Building2,
+  QrCode
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -184,10 +190,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Payment Method editor state
   const [editingPaymentMethod, setEditingPaymentMethod] = useState<Partial<PaymentMethod> | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [copiedGatewayId, setCopiedGatewayId] = useState<string | null>(null);
+  const [contactSaved, setContactSaved] = useState(false);
 
   // Settings form state
   const [settingsForm, setSettingsForm] = useState(settings);
   const [settingsSaved, setSettingsSaved] = useState(false);
+
+  useEffect(() => {
+    setSettingsForm(settings);
+  }, [settings]);
+
+  const handleCopyText = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedGatewayId(id);
+    setTimeout(() => setCopiedGatewayId(null), 2000);
+  };
 
   // Revenue & Metrics Calculations
   const verifiedOrders = orders.filter(o => o.status === 'payment_confirmed' || o.status === 'completed');
@@ -232,7 +250,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         ...productData,
         pricingType: isFree ? 'free' : 'paid',
         price: isFree ? 0 : (Number(productData.price) || 0),
-        currency: 'PKR'
+        currency: 'PKR',
+        websitePreviewUrl: productData.websitePreviewUrl || '',
+        apkPreviewUrl: productData.apkPreviewUrl || '',
+        previewEnabled: productData.previewEnabled ?? true
       });
     } else {
       await addProduct({
@@ -252,6 +273,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         includedFiles: productData.includedFiles || ['APK Binary', 'User Guide'],
         apkUrl: productData.apkUrl,
         apkSize: productData.apkSize,
+        websitePreviewUrl: productData.websitePreviewUrl || '',
+        apkPreviewUrl: productData.apkPreviewUrl || '',
+        previewEnabled: productData.previewEnabled ?? true,
         sourceAvailable: Boolean(productData.sourceAvailable),
         sourcePrice: Number(productData.sourcePrice) || 0,
         sourceZipUrl: productData.sourceZipUrl,
@@ -529,6 +553,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </button>
 
         <button
+          onClick={() => setActiveTab('payments')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all whitespace-nowrap ${
+            activeTab === 'payments'
+              ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/20'
+              : 'bg-slate-900 text-slate-400 hover:text-white border border-white/5'
+          }`}
+        >
+          <CreditCard className="w-4 h-4 text-emerald-400" />
+          <span>💳 Accounts & Numbers ({paymentMethods.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all whitespace-nowrap ${
+            activeTab === 'settings'
+              ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/20'
+              : 'bg-slate-900 text-slate-400 hover:text-white border border-white/5'
+          }`}
+        >
+          <Settings className="w-4 h-4" />
+          <span>Settings</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('bundles')}
           className={`px-4 py-2.5 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all whitespace-nowrap ${
             activeTab === 'bundles'
@@ -603,30 +651,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         >
           <Gift className="w-4 h-4" />
           <span>Giveaways & Archive 🏆 ({giveaways.length})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('payments')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all whitespace-nowrap ${
-            activeTab === 'payments'
-              ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/20'
-              : 'bg-slate-900 text-slate-400 hover:text-white border border-white/5'
-          }`}
-        >
-          <CreditCard className="w-4 h-4" />
-          <span>Gateways ({paymentMethods.length})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('settings')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all whitespace-nowrap ${
-            activeTab === 'settings'
-              ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/20'
-              : 'bg-slate-900 text-slate-400 hover:text-white border border-white/5'
-          }`}
-        >
-          <Settings className="w-4 h-4" />
-          <span>Settings</span>
         </button>
       </div>
 
@@ -927,8 +951,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     {/* Thumbnail */}
                     <div className="relative aspect-[16/10] bg-slate-950 overflow-hidden">
                       <img
-                        src={p.demoImages[0] || 'https://images.unsplash.com/photo-1556742049-0a67c5574f73?auto=format&fit=crop&w=800&q=80'}
+                        src={getSafeProductImage(p.demoImages, p.category)}
                         alt={p.name}
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          const fallback = CATEGORY_FALLBACK_IMAGES[p.category] || CATEGORY_FALLBACK_IMAGES['default'];
+                          if (target.src !== fallback) {
+                            target.src = fallback;
+                          }
+                        }}
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
@@ -942,11 +973,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         )}
                         {p.pricingType === 'free' || p.price === 0 ? (
                           <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-emerald-950/80 backdrop-blur-md text-emerald-300 border border-emerald-500/40 font-bold">
-                            FREE
+                            FREE APK
                           </span>
                         ) : (
                           <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-cyan-950/80 backdrop-blur-md text-cyan-300 border border-cyan-500/30 font-semibold">
-                            PAID
+                            PAID APK
                           </span>
                         )}
                       </div>
@@ -972,6 +1003,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         </button>
                       </div>
                       <p className="text-xs text-slate-400 line-clamp-2">{p.shortDescription}</p>
+
+                      {/* Live Web Preview Link or APK Direct Demo */}
+                      {p.websitePreviewUrl && (
+                        <div className="flex items-center justify-between p-2 rounded-xl bg-cyan-950/30 border border-cyan-500/20 text-xs">
+                          <span className="text-[11px] font-mono text-cyan-300 flex items-center gap-1.5 truncate">
+                            <Globe className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                            <span className="truncate">Demo: {p.websitePreviewUrl}</span>
+                          </span>
+                          <a
+                            href={p.websitePreviewUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 shrink-0 ml-1"
+                            title="Open Live Preview"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        </div>
+                      )}
 
                       {/* Real-time Product Stats */}
                       {(() => {
@@ -1077,6 +1127,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <Plus className="w-4 h-4" />
               <span>Create Product Bundle</span>
             </button>
+          </div>
+
+          {/* Bundles Info Guide */}
+          <div className="p-4 rounded-2xl bg-indigo-950/30 border border-indigo-500/20 text-xs font-mono text-indigo-200 flex items-start gap-3">
+            <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400 shrink-0">
+              <Layers className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <p className="font-bold text-white">ℹ️ Software Bundles System Explained (بنڈل سسٹم کیا ہے؟)</p>
+              <p className="text-slate-300 text-[11px] leading-relaxed">
+                Bundles ka feature un cases ke liye hota hai jab aap multiple web apps ya APKs ko ek sath combo package mein discounted price par bechna chahein (maslan: 3 Apps package for PKR 5,000).
+                <strong> Agar aap sirf individual Apps ya Web Source Codes bechna chahte hain, to is section ko banana zaroori nahi hai</strong> — aapke standalone software aur APKs "Product Catalog" se directly live chalte rahenge!
+              </p>
+            </div>
           </div>
 
           {bundles.length === 0 ? (
@@ -1784,48 +1848,444 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
-      {/* TAB 10: PAYMENT GATEWAYS */}
+      {/* TAB 10: PAYMENT GATEWAYS & RECEIVING NUMBERS */}
       {activeTab === 'payments' && (
-        <div className="space-y-6 animate-in fade-in text-left">
-          <div className="flex justify-between items-center">
+        <div className="space-y-8 animate-in fade-in text-left">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-xl font-bold text-white font-mono">Payment Gateway Configuration</h2>
-              <p className="text-xs text-slate-400">Manage bank accounts, EasyPaisa, JazzCash, and payment instructions.</p>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-bold text-white font-mono">💳 Payment Accounts & Receiving Numbers</h2>
+                <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold">
+                  ● LIVE SYNC
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">
+                Configure your receiving accounts (EasyPaisa, JazzCash, SadaPay, NayaPay, Raast, Bank IBAN) and WhatsApp numbers for customer payment verification.
+              </p>
             </div>
 
             <button
               onClick={() => {
                 setEditingPaymentMethod({
-                  name: '',
+                  name: 'EasyPaisa',
                   type: 'easypaisa',
-                  accountTitle: settings.developerName,
-                  accountNumber: '',
-                  instructions: 'Transfer exact amount and submit TRX ID screenshot.',
+                  accountTitle: settingsForm.developerName || 'Aftab Ahmed',
+                  accountNumber: settingsForm.whatsapp || '03263724861',
+                  instructions: '1. Open EasyPaisa App\n2. Transfer exact PKR total to the mobile number\n3. Copy Transaction TRX ID and take payment receipt screenshot.',
                   active: true
                 });
                 setIsPaymentModalOpen(true);
               }}
-              className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs font-mono flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 cursor-pointer shadow-lg shadow-cyan-500/20 shrink-0"
             >
               <Plus className="w-4 h-4 text-black" />
-              <span>Add Gateway</span>
+              <span>+ Add Payment Account</span>
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {paymentMethods.map((pm) => (
-              <div key={pm.id} className="p-6 rounded-2xl bg-[#090d16] border border-white/10 space-y-3">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-bold text-white text-base">{pm.name}</h3>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-mono ${pm.active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>
-                    {pm.active ? 'Active' : 'Disabled'}
-                  </span>
+          {/* Section 1: Admin Contact & WhatsApp Numbers Quick-Setup */}
+          <div className="p-6 sm:p-7 rounded-3xl bg-[#090d16] border border-cyan-500/30 space-y-5 shadow-2xl relative overflow-hidden">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400">
+                  <Smartphone className="w-5 h-5" />
                 </div>
-                <p className="text-xs text-slate-300 font-mono">Title: {pm.accountTitle}</p>
-                <p className="text-xs font-mono text-cyan-400 font-bold">Number: {pm.accountNumber}</p>
-                <p className="text-[11px] text-slate-400 whitespace-pre-line">{pm.instructions}</p>
+                <div>
+                  <h3 className="font-bold text-white text-base font-mono">Admin Profile & Direct Contact Numbers</h3>
+                  <p className="text-xs text-slate-400">These contact details appear on public invoices, checkout screens, and support links.</p>
+                </div>
               </div>
-            ))}
+
+              {contactSaved && (
+                <span className="text-xs font-mono text-emerald-400 font-bold flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/30">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Numbers Saved to Firebase!
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-mono text-slate-300 mb-1.5">
+                  <span className="text-emerald-400 font-bold">🟢 Primary WhatsApp Number *</span>
+                </label>
+                <div className="relative">
+                  <MessageSquare className="w-4 h-4 text-emerald-400 absolute left-3 top-3" />
+                  <input
+                    type="text"
+                    value={settingsForm.whatsapp || ''}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, whatsapp: e.target.value })}
+                    placeholder="+923263724861"
+                    className="w-full pl-9.5 pr-3.5 py-2.5 rounded-xl bg-slate-950 border border-emerald-500/30 text-emerald-300 text-xs font-mono focus:border-emerald-400 focus:outline-none"
+                  />
+                </div>
+                <span className="text-[10px] text-slate-500 font-mono mt-1 block">Clients click to chat for fast payment approval</span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-slate-300 mb-1.5">
+                  <span className="text-cyan-300 font-bold">📞 Direct Calling / Mobile Number *</span>
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-cyan-400 absolute left-3 top-3" />
+                  <input
+                    type="text"
+                    value={settingsForm.phone || ''}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, phone: e.target.value })}
+                    placeholder="+92 326 3724861"
+                    className="w-full pl-9.5 pr-3.5 py-2.5 rounded-xl bg-slate-950 border border-cyan-500/30 text-cyan-200 text-xs font-mono focus:border-cyan-400 focus:outline-none"
+                  />
+                </div>
+                <span className="text-[10px] text-slate-500 font-mono mt-1 block">Shown on invoices and receipt certificates</span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-slate-300 mb-1.5">
+                  <span className="text-white font-bold">✉️ Support & Billing Email *</span>
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <input
+                    type="email"
+                    value={settingsForm.email || ''}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, email: e.target.value })}
+                    placeholder="affyofficial.dev@gmail.com"
+                    className="w-full pl-9.5 pr-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
+                  />
+                </div>
+                <span className="text-[10px] text-slate-500 font-mono mt-1 block">Receives inquiry notifications</span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-slate-300 mb-1.5">
+                  <span>Developer / Admin Full Name *</span>
+                </label>
+                <input
+                  type="text"
+                  value={settingsForm.developerName || ''}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, developerName: e.target.value })}
+                  placeholder="Aftab Ahmed"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-slate-300 mb-1.5">
+                  <span>Brand Name / Studio *</span>
+                </label>
+                <input
+                  type="text"
+                  value={settingsForm.brandName || ''}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, brandName: e.target.value })}
+                  placeholder="AFFY OFFICIAL"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-slate-300 mb-1.5">
+                  <span>Official WhatsApp Channel</span>
+                </label>
+                <input
+                  type="text"
+                  value={settingsForm.whatsappChannel || ''}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, whatsappChannel: e.target.value })}
+                  placeholder="https://whatsapp.com/channel/..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={async () => {
+                  await updateSettings(settingsForm);
+                  setContactSaved(true);
+                  setTimeout(() => setContactSaved(false), 2500);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 cursor-pointer"
+              >
+                <Save className="w-4 h-4 text-black" />
+                <span>Save Contact Numbers & Profile</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Section 2: 1-Click Pakistani Presets Toolbar */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-white text-sm font-mono flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-cyan-400" />
+                <span>1-Click Quick Add Presets (فوری پیمنٹ اکاؤنٹ شامل کریں)</span>
+              </h3>
+              <span className="text-[11px] text-slate-400 font-mono">Click any preset to prefill</span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingPaymentMethod({
+                    name: 'EasyPaisa',
+                    type: 'easypaisa',
+                    accountTitle: settingsForm.developerName || 'Aftab Ahmed',
+                    accountNumber: settingsForm.whatsapp || '03263724861',
+                    instructions: `1. Open EasyPaisa App\n2. Select "Send Money" -> "EasyPaisa Mobile Account"\n3. Enter Mobile Number: ${settingsForm.whatsapp || '03263724861'}\n4. Verify Title: ${settingsForm.developerName || 'Aftab Ahmed'}\n5. Complete payment and attach TRX ID screenshot.`,
+                    active: true
+                  });
+                  setIsPaymentModalOpen(true);
+                }}
+                className="p-3 rounded-2xl bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold flex flex-col items-center gap-1.5 transition-all text-center cursor-pointer"
+              >
+                <span className="text-base">🟢</span>
+                <span>+ EasyPaisa</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingPaymentMethod({
+                    name: 'JazzCash',
+                    type: 'jazzcash',
+                    accountTitle: settingsForm.developerName || 'Aftab Ahmed',
+                    accountNumber: settingsForm.whatsapp || '03263724861',
+                    instructions: `1. Open JazzCash App or dial *786#\n2. Select "Send Money" -> "To JazzCash Account"\n3. Enter Number: ${settingsForm.whatsapp || '03263724861'}\n4. Confirm Recipient: ${settingsForm.developerName || 'Aftab Ahmed'}\n5. Complete payment and copy Transaction ID (TRX ID).`,
+                    active: true
+                  });
+                  setIsPaymentModalOpen(true);
+                }}
+                className="p-3 rounded-2xl bg-amber-950/40 hover:bg-amber-900/60 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold flex flex-col items-center gap-1.5 transition-all text-center cursor-pointer"
+              >
+                <span className="text-base">🟠</span>
+                <span>+ JazzCash</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingPaymentMethod({
+                    name: 'SadaPay',
+                    type: 'other',
+                    accountTitle: settingsForm.developerName || 'Aftab Ahmed',
+                    accountNumber: settingsForm.whatsapp || '03263724861',
+                    instructions: `1. Open any Banking or SadaPay App\n2. Send money to SadaPay Mobile: ${settingsForm.whatsapp || '03263724861'}\n3. Verify Title: ${settingsForm.developerName || 'Aftab Ahmed'}\n4. Submit proof screenshot with TRX ID.`,
+                    active: true
+                  });
+                  setIsPaymentModalOpen(true);
+                }}
+                className="p-3 rounded-2xl bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-500/30 text-cyan-300 text-xs font-mono font-bold flex flex-col items-center gap-1.5 transition-all text-center cursor-pointer"
+              >
+                <span className="text-base">🔵</span>
+                <span>+ SadaPay</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingPaymentMethod({
+                    name: 'NayaPay',
+                    type: 'other',
+                    accountTitle: settingsForm.developerName || 'Aftab Ahmed',
+                    accountNumber: settingsForm.whatsapp || '03263724861',
+                    instructions: `1. Open NayaPay or Banking App\n2. Send to NayaPay Mobile ID: ${settingsForm.whatsapp || '03263724861'}\n3. Confirm Account Title: ${settingsForm.developerName || 'Aftab Ahmed'}\n4. Attach transaction receipt.`,
+                    active: true
+                  });
+                  setIsPaymentModalOpen(true);
+                }}
+                className="p-3 rounded-2xl bg-purple-950/40 hover:bg-purple-900/60 border border-purple-500/30 text-purple-300 text-xs font-mono font-bold flex flex-col items-center gap-1.5 transition-all text-center cursor-pointer"
+              >
+                <span className="text-base">🟣</span>
+                <span>+ NayaPay</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingPaymentMethod({
+                    name: 'Raast Direct',
+                    type: 'other',
+                    accountTitle: settingsForm.developerName || 'Aftab Ahmed',
+                    accountNumber: settingsForm.whatsapp || '03263724861',
+                    instructions: `1. Open your Bank App\n2. Select Raast Instant Payment\n3. Enter Raast Registered Mobile: ${settingsForm.whatsapp || '03263724861'}\n4. Verify Receiver Title: ${settingsForm.developerName || 'Aftab Ahmed'}\n5. Complete transfer & submit TRX ID.`,
+                    active: true
+                  });
+                  setIsPaymentModalOpen(true);
+                }}
+                className="p-3 rounded-2xl bg-yellow-950/40 hover:bg-yellow-900/60 border border-yellow-500/30 text-yellow-300 text-xs font-mono font-bold flex flex-col items-center gap-1.5 transition-all text-center cursor-pointer"
+              >
+                <span className="text-base">🟡</span>
+                <span>+ Raast ID</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingPaymentMethod({
+                    name: 'Meezan Bank Ltd',
+                    type: 'bank_transfer',
+                    accountTitle: settingsForm.developerName || 'Aftab Ahmed',
+                    accountNumber: 'PK00MEZN0000000000000000',
+                    instructions: `1. Open Bank App / ATM\n2. Select Interbank Funds Transfer (IBFT)\n3. Bank: Meezan Bank Ltd\n4. Enter IBAN/Account Number\n5. Verify Title: ${settingsForm.developerName || 'Aftab Ahmed'}\n6. Save and upload receipt.`,
+                    active: true
+                  });
+                  setIsPaymentModalOpen(true);
+                }}
+                className="p-3 rounded-2xl bg-blue-950/40 hover:bg-blue-900/60 border border-blue-500/30 text-blue-300 text-xs font-mono font-bold flex flex-col items-center gap-1.5 transition-all text-center cursor-pointer"
+              >
+                <span className="text-base">🏛️</span>
+                <span>+ Bank / IBAN</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Section 3: Configured Payment Gateways List */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-white text-base font-mono">
+                Active Gateways & Payment Accounts ({paymentMethods.length})
+              </h3>
+              <p className="text-xs text-slate-400 font-mono">All methods sync directly to buyer checkout</p>
+            </div>
+
+            {paymentMethods.length === 0 ? (
+              <div className="py-12 text-center rounded-3xl bg-[#090d16] border border-white/5 space-y-4">
+                <CreditCard className="w-12 h-12 text-slate-600 mx-auto" />
+                <h3 className="text-base font-bold text-white font-mono">No payment gateways configured yet</h3>
+                <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  Click the presets above to instantly add EasyPaisa or JazzCash accounts.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {paymentMethods.map((pm) => {
+                  const isEasyPaisa = pm.type === 'easypaisa' || pm.name.toLowerCase().includes('easypaisa');
+                  const isJazzCash = pm.type === 'jazzcash' || pm.name.toLowerCase().includes('jazzcash');
+                  const isBank = pm.type === 'bank_transfer' || pm.name.toLowerCase().includes('bank');
+
+                  return (
+                    <div
+                      key={pm.id}
+                      className={`p-6 rounded-3xl bg-[#090d16] border transition-all space-y-4 shadow-xl flex flex-col justify-between ${
+                        pm.active
+                          ? isEasyPaisa
+                            ? 'border-emerald-500/30 hover:border-emerald-500/50'
+                            : isJazzCash
+                            ? 'border-amber-500/30 hover:border-amber-500/50'
+                            : 'border-cyan-500/30 hover:border-cyan-500/50'
+                          : 'border-white/5 opacity-60'
+                      }`}
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div
+                              className={`p-2.5 rounded-2xl ${
+                                isEasyPaisa
+                                  ? 'bg-emerald-500/10 text-emerald-400'
+                                  : isJazzCash
+                                  ? 'bg-amber-500/10 text-amber-400'
+                                  : isBank
+                                  ? 'bg-blue-500/10 text-blue-400'
+                                  : 'bg-cyan-500/10 text-cyan-400'
+                              }`}
+                            >
+                              {isBank ? <Building2 className="w-5 h-5" /> : <Smartphone className="w-5 h-5" />}
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-white text-base font-mono">{pm.name}</h3>
+                              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+                                {pm.type || 'Mobile Wallet'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => updatePaymentMethod(pm.id, { active: !pm.active })}
+                            className={`px-3 py-1 rounded-xl text-xs font-mono font-bold border transition-colors cursor-pointer ${
+                              pm.active
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                                : 'bg-slate-900 text-slate-500 border-white/10 hover:text-slate-300'
+                            }`}
+                            title="Click to Toggle Active/Disabled in public checkout"
+                          >
+                            {pm.active ? '● Active in Checkout' : '○ Disabled'}
+                          </button>
+                        </div>
+
+                        <div className="p-4 rounded-2xl bg-slate-950 border border-white/5 space-y-2.5 font-mono">
+                          <div>
+                            <span className="text-[10px] uppercase text-slate-500">Account Title (Beneficiary):</span>
+                            <p className="text-sm font-bold text-white">{pm.accountTitle || 'Not Specified'}</p>
+                          </div>
+
+                          <div>
+                            <span className="text-[10px] uppercase text-slate-500">Account / Mobile / IBAN Number:</span>
+                            <div className="flex items-center justify-between gap-2 mt-0.5">
+                              <p className="text-base font-black text-cyan-400 select-all tracking-wide">
+                                {pm.accountNumber}
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => handleCopyText(pm.accountNumber, pm.id)}
+                                className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-[11px] flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                {copiedGatewayId === pm.id ? (
+                                  <>
+                                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                    <span className="text-emerald-400 font-bold">Copied</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-3.5 h-3.5 text-slate-400" />
+                                    <span>Copy</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {pm.instructions && (
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-mono text-slate-500 uppercase">Buyer Instructions:</span>
+                            <p className="text-[11px] text-slate-300 whitespace-pre-line bg-slate-900/50 p-3 rounded-xl border border-white/5 font-mono leading-relaxed">
+                              {pm.instructions}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="pt-3 border-t border-white/5 flex gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingPaymentMethod(pm);
+                            setIsPaymentModalOpen(true);
+                          }}
+                          className="flex-1 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                          <span>Edit Account Details</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            if (confirm(`Delete payment account "${pm.name}" (${pm.accountNumber})?`)) {
+                              deletePaymentMethod(pm.id);
+                            }
+                          }}
+                          className="p-2.5 rounded-xl bg-slate-900 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-white/10 cursor-pointer transition-colors"
+                          title="Delete Gateway"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -2294,8 +2754,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* MODAL: PAYMENT METHOD EDITOR */}
       {isPaymentModalOpen && editingPaymentMethod && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-          <div className="relative w-full max-w-lg bg-[#090d16] border border-cyan-500/40 rounded-3xl p-6 shadow-2xl text-left space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
+          <div className="relative w-full max-w-lg bg-[#090d16] border border-cyan-500/40 rounded-3xl p-6 sm:p-7 shadow-2xl text-left space-y-5 my-8 max-h-[92vh] overflow-y-auto custom-scrollbar">
             <button
               onClick={() => setIsPaymentModalOpen(false)}
               className="absolute top-5 right-5 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white cursor-pointer"
@@ -2303,78 +2763,148 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <X className="w-5 h-5" />
             </button>
 
-            <h3 className="font-bold text-white text-base font-mono">
-              {editingPaymentMethod.id ? 'Edit Gateway' : 'Add Payment Gateway'}
-            </h3>
+            <div>
+              <span className="text-[10px] font-mono px-2.5 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-bold uppercase">
+                {editingPaymentMethod.id ? 'UPDATE PAYMENT GATEWAY' : 'NEW RECEIVING ACCOUNT'}
+              </span>
+              <h3 className="text-xl font-bold text-white font-mono mt-2">
+                {editingPaymentMethod.id ? 'Edit Payment Gateway' : 'Add Payment Account'}
+              </h3>
+              <p className="text-xs text-slate-400">Buyers will see this account at checkout and transfer directly.</p>
+            </div>
 
-            <form onSubmit={handleSavePaymentMethod} className="space-y-3">
-              <div>
-                <label className="block text-xs font-mono text-slate-300 mb-1">Gateway Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={editingPaymentMethod.name || ''}
-                  onChange={(e) => setEditingPaymentMethod({ ...editingPaymentMethod, name: e.target.value })}
-                  placeholder="e.g. JazzCash Direct"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:border-cyan-500 focus:outline-none"
-                />
+            {/* Quick Fill Presets */}
+            <div className="space-y-1.5 p-3 rounded-2xl bg-slate-950 border border-white/5">
+              <span className="text-[10px] font-mono text-slate-400 font-bold uppercase">Quick Fill Presets:</span>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { name: 'EasyPaisa', type: 'easypaisa' },
+                  { name: 'JazzCash', type: 'jazzcash' },
+                  { name: 'SadaPay', type: 'other' },
+                  { name: 'NayaPay', type: 'other' },
+                  { name: 'Raast Direct', type: 'other' },
+                  { name: 'Meezan Bank Ltd', type: 'bank_transfer' }
+                ].map((item) => (
+                  <button
+                    key={item.name}
+                    type="button"
+                    onClick={() => {
+                      setEditingPaymentMethod({
+                        ...editingPaymentMethod,
+                        name: item.name,
+                        type: item.type as any,
+                        accountTitle: editingPaymentMethod.accountTitle || settingsForm.developerName || 'Aftab Ahmed',
+                        accountNumber: editingPaymentMethod.accountNumber || (item.type !== 'bank_transfer' ? settingsForm.whatsapp || '03263724861' : ''),
+                        instructions:
+                          item.name === 'EasyPaisa'
+                            ? `1. Open EasyPaisa App\n2. Send Money -> EasyPaisa Mobile Account\n3. Enter: ${settingsForm.whatsapp || '03263724861'}\n4. Verify Title: ${settingsForm.developerName || 'Aftab Ahmed'}\n5. Complete transfer and submit TRX ID screenshot.`
+                            : item.name === 'JazzCash'
+                            ? `1. Open JazzCash App\n2. Send Money -> JazzCash Account\n3. Enter: ${settingsForm.whatsapp || '03263724861'}\n4. Confirm Name: ${settingsForm.developerName || 'Aftab Ahmed'}\n5. Copy Transaction TRX ID & save receipt.`
+                            : item.name === 'SadaPay'
+                            ? `1. Send money to SadaPay Mobile: ${settingsForm.whatsapp || '03263724861'}\n2. Title: ${settingsForm.developerName || 'Aftab Ahmed'}\n3. Submit TRX ID proof.`
+                            : item.name === 'NayaPay'
+                            ? `1. Send to NayaPay ID: ${settingsForm.whatsapp || '03263724861'}\n2. Title: ${settingsForm.developerName || 'Aftab Ahmed'}\n3. Submit screenshot.`
+                            : item.name === 'Raast Direct'
+                            ? `1. Select Raast Instant Payment in Bank App\n2. Receiver Mobile: ${settingsForm.whatsapp || '03263724861'}\n3. Verify Title: ${settingsForm.developerName || 'Aftab Ahmed'}`
+                            : `1. Interbank Funds Transfer (IBFT) to Meezan Bank Ltd\n2. Account Title: ${settingsForm.developerName || 'Aftab Ahmed'}\n3. Attach bank receipt.`
+                      });
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 text-[11px] font-mono transition-colors cursor-pointer"
+                  >
+                    + {item.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <form onSubmit={handleSavePaymentMethod} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="block text-xs font-mono text-slate-300 mb-1">Gateway Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingPaymentMethod.name || ''}
+                    onChange={(e) => setEditingPaymentMethod({ ...editingPaymentMethod, name: e.target.value })}
+                    placeholder="e.g. EasyPaisa, JazzCash, Meezan Bank"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono text-slate-300 mb-1">Account Category / Type</label>
+                  <select
+                    value={editingPaymentMethod.type || 'easypaisa'}
+                    onChange={(e) => setEditingPaymentMethod({ ...editingPaymentMethod, type: e.target.value as any })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
+                  >
+                    <option value="easypaisa">EasyPaisa Mobile Account</option>
+                    <option value="jazzcash">JazzCash Mobile Account</option>
+                    <option value="bank_transfer">Bank Transfer / IBAN</option>
+                    <option value="other">SadaPay / NayaPay / Raast / Other</option>
+                  </select>
+                </div>
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-slate-300 mb-1">Account Title</label>
+                <label className="block text-xs font-mono text-slate-300 mb-1">Account Title (Beneficiary Name) *</label>
                 <input
                   type="text"
+                  required
                   value={editingPaymentMethod.accountTitle || ''}
                   onChange={(e) => setEditingPaymentMethod({ ...editingPaymentMethod, accountTitle: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:border-cyan-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-mono text-slate-300 mb-1">Account Number / IBAN *</label>
-                <input
-                  type="text"
-                  required
-                  value={editingPaymentMethod.accountNumber || ''}
-                  onChange={(e) => setEditingPaymentMethod({ ...editingPaymentMethod, accountNumber: e.target.value })}
+                  placeholder="e.g. Aftab Ahmed"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-slate-300 mb-1">Instructions for Buyer</label>
-                <textarea
-                  rows={2}
-                  value={editingPaymentMethod.instructions || ''}
-                  onChange={(e) => setEditingPaymentMethod({ ...editingPaymentMethod, instructions: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:border-cyan-500 focus:outline-none"
+                <label className="block text-xs font-mono text-slate-300 mb-1">Account Number / Mobile Number / IBAN *</label>
+                <input
+                  type="text"
+                  required
+                  value={editingPaymentMethod.accountNumber || ''}
+                  onChange={(e) => setEditingPaymentMethod({ ...editingPaymentMethod, accountNumber: e.target.value })}
+                  placeholder="e.g. 03263724861 or PK00MEZN0000000000000000"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none font-bold"
                 />
               </div>
 
-              <div className="flex items-center gap-2 pt-1">
+              <div>
+                <label className="block text-xs font-mono text-slate-300 mb-1">Step-by-step Buyer Instructions</label>
+                <textarea
+                  rows={4}
+                  value={editingPaymentMethod.instructions || ''}
+                  onChange={(e) => setEditingPaymentMethod({ ...editingPaymentMethod, instructions: e.target.value })}
+                  placeholder="Explain step by step how buyer should send money and provide TRX ID..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none leading-relaxed"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1 p-3 rounded-xl bg-slate-950 border border-white/5">
                 <input
                   type="checkbox"
                   id="activeCheck"
                   checked={editingPaymentMethod.active ?? true}
                   onChange={(e) => setEditingPaymentMethod({ ...editingPaymentMethod, active: e.target.checked })}
-                  className="w-4 h-4 rounded text-cyan-500 focus:ring-cyan-500"
+                  className="w-4 h-4 rounded text-cyan-500 focus:ring-cyan-500 cursor-pointer"
                 />
-                <label htmlFor="activeCheck" className="text-xs font-mono text-slate-300">
-                  Active in Checkout
+                <label htmlFor="activeCheck" className="text-xs font-mono text-slate-200 cursor-pointer font-bold">
+                  Enable and show this payment gateway in customer checkout
                 </label>
               </div>
 
-              <div className="pt-3 flex justify-end gap-2">
+              <div className="pt-3 border-t border-white/10 flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsPaymentModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-mono cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-cyan-500 text-black font-bold text-xs font-mono cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs font-mono cursor-pointer transition-colors shadow-lg shadow-cyan-500/20"
                 >
                   Save Gateway
                 </button>

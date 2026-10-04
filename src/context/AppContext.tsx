@@ -328,11 +328,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setProjects([]);
       });
 
+      // Settings listener
+      const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
+        if (docSnap.exists()) {
+          setSettings(docSnap.data() as SiteSettings);
+        } else {
+          // Seed default settings to Firestore
+          setDoc(doc(db, 'settings', 'global'), INITIAL_SETTINGS).catch(() => {});
+        }
+      }, (err) => console.warn('Firestore settings listener error:', err));
+
       // PaymentMethods listener
       const unsubPM = onSnapshot(collection(db, 'paymentMethods'), (snapshot) => {
-        const list = snapshot.docs.map(d => ({ ...d.data(), id: d.id } as PaymentMethod));
-        if (list.length > 0) {
-          setPaymentMethods(list);
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map(d => ({ ...d.data(), id: d.id } as PaymentMethod));
+          setPaymentMethods(list.sort((a, b) => (a.order || 0) - (b.order || 0)));
+        } else {
+          // Auto-seed initial payment methods to Firestore if empty
+          INITIAL_PAYMENT_METHODS.forEach(pm => {
+            setDoc(doc(db, 'paymentMethods', pm.id), pm).catch(() => {});
+          });
         }
       }, (err) => console.warn('Firestore PM listener error:', err));
 
@@ -367,6 +382,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }, (err) => console.warn('Firestore giveaways listener error:', err));
 
       return () => {
+        unsubSettings();
         unsubProducts();
         unsubBundles();
         unsubAnnouncements();
