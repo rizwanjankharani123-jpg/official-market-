@@ -80,7 +80,7 @@ export const ProductBundlesView: React.FC<ProductBundlesViewProps> = ({
             return (
               <div
                 key={bundle.id}
-                className="rounded-3xl bg-[#090d16] border border-indigo-500/30 hover:border-indigo-400/60 transition-all flex flex-col justify-between overflow-hidden shadow-2xl relative group"
+                className="rounded-3xl bg-[#090d16] border border-indigo-500/30 hover:border-indigo-400/60 transition-all flex flex-col justify-between overflow-hidden shadow-2xl relative group card-elevate"
               >
                 {/* Highlight Glow Accent */}
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-cyan-400 to-amber-400 z-10" />
@@ -181,7 +181,7 @@ export const ProductBundlesView: React.FC<ProductBundlesViewProps> = ({
 
                   <button
                     onClick={() => onSelectBundle(bundle)}
-                    className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-500 via-cyan-500 to-blue-600 hover:brightness-110 text-black font-black text-sm font-mono transition-all flex items-center justify-center gap-2 shadow-xl shadow-indigo-950/50 cursor-pointer"
+                    className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-500 via-cyan-500 to-blue-600 hover:brightness-110 text-black font-black text-sm font-mono transition-all flex items-center justify-center gap-2 shadow-xl shadow-indigo-950/50 cursor-pointer btn-shimmer"
                   >
                     <DownloadCloud className="w-4 h-4 text-black" />
                     <span>Purchase Complete Bundle</span>

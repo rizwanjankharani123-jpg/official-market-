@@ -118,7 +118,7 @@ export const SourceCodeMarketplace: React.FC<SourceCodeMarketplaceProps> = ({
           {filtered.map((product) => (
             <div
               key={product.id}
-              className="p-6 sm:p-8 rounded-2xl bg-[#090d16] border border-white/10 hover:border-indigo-500/40 transition-all duration-300 flex flex-col justify-between space-y-6 text-left group shadow-xl shadow-black/50"
+              className="p-6 sm:p-8 rounded-2xl bg-[#090d16] border border-white/10 hover:border-indigo-500/40 transition-all duration-300 flex flex-col justify-between space-y-6 text-left group shadow-xl shadow-black/50 card-elevate hover-glow-indigo"
             >
             <div className="space-y-4">
               {/* Top Meta */}
@@ -211,7 +211,7 @@ export const SourceCodeMarketplace: React.FC<SourceCodeMarketplaceProps> = ({
             <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-3">
               <button
                 onClick={() => onOpenDetails(product)}
-                className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 text-xs font-medium transition-colors flex items-center gap-1.5"
+                className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95"
               >
                 <Eye className="w-3.5 h-3.5" />
                 <span>Inspect Architecture</span>
@@ -219,7 +219,7 @@ export const SourceCodeMarketplace: React.FC<SourceCodeMarketplaceProps> = ({
 
               <button
                 onClick={() => onSelectProduct(product, 'source_code')}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:brightness-110 text-white font-extrabold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
+                className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:brightness-110 text-white font-extrabold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 cursor-pointer btn-shimmer active:scale-95"
               >
                 <Code2 className="w-4 h-4 text-white" />
                 <span>Purchase Source Code License (PKR {(product.sourcePrice || product.price).toLocaleString()})</span>

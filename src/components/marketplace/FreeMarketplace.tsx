@@ -12,7 +12,8 @@ import {
   Code2,
   Package,
   Layers,
-  ArrowRight
+  ArrowRight,
+  Smartphone
 } from 'lucide-react';
 
 interface FreeMarketplaceProps {
@@ -152,7 +153,7 @@ export const FreeMarketplace: React.FC<FreeMarketplaceProps> = ({
         {filteredProducts.map((product) => (
           <div
             key={product.id}
-            className="rounded-3xl bg-[#090d16] border border-emerald-500/20 hover:border-emerald-500/50 transition-all duration-300 flex flex-col justify-between overflow-hidden text-left group shadow-lg shadow-black/40"
+            className="rounded-3xl bg-[#090d16] border border-emerald-500/20 hover:border-emerald-500/50 transition-all duration-300 flex flex-col justify-between overflow-hidden text-left group shadow-lg shadow-black/40 card-elevate"
           >
             <div>
               {/* Thumbnail Image */}
@@ -177,14 +178,21 @@ export const FreeMarketplace: React.FC<FreeMarketplaceProps> = ({
                 {/* Badges */}
                 <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
                   {product.featured && (
-                    <span className="px-2.5 py-1 rounded-md bg-amber-500 text-black font-extrabold text-[10px] font-mono shadow-md shadow-amber-500/20 flex items-center gap-1">
+                    <span className="px-2.5 py-1 rounded-md bg-amber-500 text-black font-extrabold text-[10px] font-mono shadow-md shadow-amber-500/20 flex items-center gap-1 animate-pulse-glow">
                       <Sparkles className="w-3 h-3 text-black" />
                       ⭐ Featured
                     </span>
                   )}
-                  <span className="px-2.5 py-1 rounded-md bg-emerald-500 text-black font-extrabold text-[10px] font-mono shadow-md shadow-emerald-500/30 uppercase tracking-wider">
-                    FREE
-                  </span>
+                  {product.apkBadge ? (
+                    <span className="px-2.5 py-1 rounded-md bg-gradient-to-r from-emerald-500 to-teal-500 text-black font-extrabold text-[10px] font-mono shadow-md shadow-emerald-500/30 flex items-center gap-1">
+                      <Smartphone className="w-3 h-3" />
+                      {product.apkBadge}
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-1 rounded-md bg-emerald-500 text-black font-extrabold text-[10px] font-mono shadow-md shadow-emerald-500/30 uppercase tracking-wider">
+                      FREE
+                    </span>
+                  )}
                   <span className="px-2.5 py-1 rounded-md bg-black/70 backdrop-blur-md border border-cyan-500/30 text-[10px] font-mono text-cyan-300 font-semibold">
                     {product.category}
                   </span>
@@ -263,8 +271,8 @@ export const FreeMarketplace: React.FC<FreeMarketplaceProps> = ({
 
                 <button
                   onClick={() => onOpenDetails(product)}
-                  className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 transition-colors cursor-pointer"
-                  title="View Details & Specs"
+                  className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 transition-all btn-shimmer cursor-pointer"
+                  title="View Details"
                 >
                   <Eye className="w-4 h-4" />
                 </button>
@@ -274,16 +282,16 @@ export const FreeMarketplace: React.FC<FreeMarketplaceProps> = ({
                 <button
                   onClick={() => handleDownload(product)}
                   disabled={downloadingId === product.id}
-                  className="w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 cursor-pointer disabled:opacity-50"
+                  className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:brightness-110 text-black font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 btn-shimmer cursor-pointer disabled:opacity-50 active:scale-95"
                 >
                   <DownloadCloud className="w-3.5 h-3.5 text-black" />
-                  <span>{downloadingId === product.id ? 'Downloading...' : 'Download Free'}</span>
+                  <span>{downloadingId === product.id ? 'Downloading...' : 'Download APK'}</span>
                 </button>
 
                 {product.sourceAvailable && onSelectProduct ? (
                   <button
                     onClick={() => onSelectProduct(product, 'source_code')}
-                    className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-indigo-300 hover:text-white border border-indigo-500/30 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-indigo-300 hover:text-white border border-indigo-500/30 font-bold text-xs transition-all flex items-center justify-center gap-1.5 btn-shimmer cursor-pointer active:scale-95"
                   >
                     <Code2 className="w-3.5 h-3.5 text-indigo-400" />
                     <span>Get Source</span>
@@ -291,9 +299,9 @@ export const FreeMarketplace: React.FC<FreeMarketplaceProps> = ({
                 ) : (
                   <button
                     onClick={() => onOpenDetails(product)}
-                    className="w-full py-2.5 px-3 rounded-xl bg-slate-900 text-slate-300 hover:text-white border border-white/10 font-medium text-xs transition-colors cursor-pointer"
+                    className="w-full py-2.5 px-3 rounded-xl bg-slate-900 text-slate-300 hover:text-white border border-white/10 font-medium text-xs transition-all btn-shimmer cursor-pointer active:scale-95"
                   >
-                    Details
+                    Details & Info
                   </button>
                 )}
               </div>

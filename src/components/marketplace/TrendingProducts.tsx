@@ -127,12 +127,13 @@ export const TrendingProducts: React.FC<TrendingProductsProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {displayList.map(({ product, soldCount, pendingCount, downloadsCount, totalActivity }, rankIndex) => {
           const isFree = product.pricingType === 'free' || product.price === 0;
+          const isApk = product.isApkOnly || product.category === 'Android App';
           const isTopRanked = rankIndex === 0;
 
           return (
             <div
               key={product.id}
-              className={`rounded-3xl bg-[#090d16] border transition-all duration-300 flex flex-col justify-between overflow-hidden text-left group shadow-xl shadow-black/60 relative ${
+              className={`rounded-3xl bg-[#090d16] border transition-all duration-300 flex flex-col justify-between overflow-hidden text-left group shadow-xl shadow-black/60 relative card-elevate hover-glow-cyan ${
                 isTopRanked
                   ? 'border-rose-500/40 hover:border-rose-400 hover:shadow-rose-950/40'
                   : isFree
@@ -315,25 +316,25 @@ export const TrendingProducts: React.FC<TrendingProductsProps> = ({
                     <button
                       onClick={() => handleFreeDownload(product)}
                       disabled={downloadingId === product.id}
-                      className="w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 cursor-pointer disabled:opacity-50"
+                      className="w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 cursor-pointer disabled:opacity-50 btn-shimmer active:scale-95"
                     >
                       <DownloadCloud className="w-3.5 h-3.5 text-black" />
-                      <span>{downloadingId === product.id ? 'Downloading...' : 'Download Free'}</span>
+                      <span>{downloadingId === product.id ? 'Downloading...' : isApk ? 'Download APK' : 'Download Free'}</span>
                     </button>
                   ) : (
                     <button
                       onClick={() => onSelectProduct(product, 'software')}
-                      className="w-full py-2.5 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20 cursor-pointer"
+                      className="w-full py-2.5 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20 cursor-pointer btn-shimmer active:scale-95"
                     >
                       <DownloadCloud className="w-3.5 h-3.5 text-black" />
-                      <span>Buy Software</span>
+                      <span>{isApk ? 'Buy APK' : 'Buy Software'}</span>
                     </button>
                   )}
 
-                  {product.sourceAvailable ? (
+                  {product.sourceAvailable && !product.isApkOnly ? (
                     <button
                       onClick={() => onSelectProduct(product, 'source_code')}
-                      className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-indigo-300 hover:text-white border border-indigo-500/30 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-indigo-300 hover:text-white border border-indigo-500/30 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer btn-shimmer active:scale-95"
                     >
                       <Code2 className="w-3.5 h-3.5 text-indigo-400" />
                       <span>Get Source</span>
@@ -341,7 +342,7 @@ export const TrendingProducts: React.FC<TrendingProductsProps> = ({
                   ) : (
                     <button
                       onClick={() => onOpenDetails(product)}
-                      className="w-full py-2.5 px-3 rounded-xl bg-slate-900 text-slate-300 hover:text-white border border-white/10 font-medium text-xs transition-colors cursor-pointer"
+                      className="w-full py-2.5 px-3 rounded-xl bg-slate-900 text-slate-300 hover:text-white border border-white/10 font-medium text-xs transition-colors cursor-pointer active:scale-95"
                     >
                       Details
                     </button>

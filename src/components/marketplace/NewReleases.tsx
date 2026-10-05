@@ -123,13 +123,14 @@ export const NewReleases: React.FC<NewReleasesProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {displayProducts.map((product, index) => {
           const isFree = product.pricingType === 'free' || product.price === 0;
+          const isApk = product.isApkOnly || product.category === 'Android App';
           const releaseDate = formatReleaseDate(product.publishedAt || product.createdAt);
           const isLatest = index === 0;
 
           return (
             <div
               key={product.id}
-              className={`rounded-3xl bg-[#090d16] border transition-all duration-300 flex flex-col justify-between overflow-hidden text-left group shadow-xl shadow-black/60 relative ${
+              className={`rounded-3xl bg-[#090d16] border transition-all duration-300 flex flex-col justify-between overflow-hidden text-left group shadow-xl shadow-black/60 relative card-elevate hover-glow-cyan ${
                 isFree
                   ? 'border-emerald-500/30 hover:border-emerald-500/60 hover:shadow-emerald-950/30'
                   : 'border-cyan-500/30 hover:border-cyan-400 hover:shadow-cyan-950/40'
@@ -296,7 +297,7 @@ export const NewReleases: React.FC<NewReleasesProps> = ({
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => onOpenDetails(product)}
-                        className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 transition-colors cursor-pointer"
+                        className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 transition-colors cursor-pointer active:scale-95"
                         title="View Architecture Details"
                       >
                         <Eye className="w-4 h-4" />
@@ -306,17 +307,17 @@ export const NewReleases: React.FC<NewReleasesProps> = ({
                         <button
                           onClick={() => handleFreeDownload(product)}
                           disabled={downloadingId === product.id}
-                          className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-50"
+                          className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-50 btn-shimmer active:scale-95"
                         >
                           <DownloadCloud className="w-4 h-4 text-black" />
-                          <span>{downloadingId === product.id ? 'Downloading...' : 'Download Free'}</span>
+                          <span>{downloadingId === product.id ? 'Downloading...' : isApk ? 'Download APK' : 'Download Free'}</span>
                         </button>
                       ) : (
                         <button
                           onClick={() => onSelectProduct(product, 'software')}
-                          className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 shadow-lg shadow-cyan-500/20 transition-all cursor-pointer"
+                          className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 shadow-lg shadow-cyan-500/20 transition-all cursor-pointer btn-shimmer active:scale-95"
                         >
-                          <span>Buy Access</span>
+                          <span>{isApk ? 'Buy APK' : 'Buy Access'}</span>
                           <ChevronRight className="w-4 h-4 text-black" />
                         </button>
                       )}

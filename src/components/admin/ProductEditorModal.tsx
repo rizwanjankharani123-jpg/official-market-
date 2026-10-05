@@ -385,7 +385,104 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                   </span>
                   <span className="text-[10px] font-mono text-slate-400">Quick configuration presets</span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                  {/* Preset 1: Paid Pro APK Only (e.g. CapCut Pro) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        category: 'Android App',
+                        pricingType: 'paid',
+                        price: 1500,
+                        isApkOnly: true,
+                        apkBadge: 'Pro APK',
+                        sourceAvailable: false,
+                        sourcePrice: 0,
+                        previewEnabled: true,
+                        demoImages: formData.demoImages && formData.demoImages.length > 0 ? formData.demoImages : ['https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=1200&q=80']
+                      });
+                    }}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      formData.isApkOnly && formData.pricingType === 'paid'
+                        ? 'bg-amber-500/15 border-amber-400 text-white shadow-md shadow-amber-500/10'
+                        : 'bg-slate-900 text-slate-400 border-white/5 hover:border-white/20 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 font-bold text-xs text-amber-300 font-mono">
+                      <Smartphone className="w-3.5 h-3.5" />
+                      <span>⭐ Paid APK Only (CapCut Pro)</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1 leading-snug">
+                      Paid APK Download. Source code is NOT included/required.
+                    </p>
+                  </button>
+
+                  {/* Preset 2: 100% Free APK Only */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        category: 'Android App',
+                        pricingType: 'free',
+                        price: 0,
+                        isApkOnly: true,
+                        apkBadge: 'Free APK',
+                        sourceAvailable: false,
+                        sourcePrice: 0,
+                        previewEnabled: true,
+                        demoImages: formData.demoImages && formData.demoImages.length > 0 ? formData.demoImages : ['https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=1200&q=80']
+                      });
+                    }}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      formData.isApkOnly && formData.pricingType === 'free'
+                        ? 'bg-emerald-500/15 border-emerald-400 text-white shadow-md shadow-emerald-500/10'
+                        : 'bg-slate-900 text-slate-400 border-white/5 hover:border-white/20 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 font-bold text-xs text-emerald-300 font-mono">
+                      <Smartphone className="w-3.5 h-3.5" />
+                      <span>🟢 Free APK Only (PKR 0)</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1 leading-snug">
+                      100% Free direct APK download. No source code.
+                    </p>
+                  </button>
+
+                  {/* Preset 3: Both Paid APK + Source Code */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        category: 'Android App',
+                        pricingType: 'paid',
+                        price: 2500,
+                        isApkOnly: false,
+                        apkBadge: 'Official App',
+                        sourceAvailable: true,
+                        sourcePrice: 4500,
+                        previewEnabled: true,
+                        demoImages: formData.demoImages && formData.demoImages.length > 0 ? formData.demoImages : ['https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=1200&q=80']
+                      });
+                    }}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      !formData.isApkOnly && formData.sourceAvailable && formData.category === 'Android App'
+                        ? 'bg-purple-500/15 border-purple-400 text-white shadow-md shadow-purple-500/10'
+                        : 'bg-slate-900 text-slate-400 border-white/5 hover:border-white/20 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 font-bold text-xs text-purple-300 font-mono">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>💎 APK + Source Code</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1 leading-snug">
+                      Both APK Install and Developer Source Code are available.
+                    </p>
+                  </button>
+
+                  {/* Preset 4: Web Project */}
                   <button
                     type="button"
                     onClick={() => {
@@ -394,6 +491,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                         category: 'Web Platform',
                         pricingType: 'paid',
                         price: 2500,
+                        isApkOnly: false,
                         sourceAvailable: true,
                         sourcePrice: 3500,
                         previewEnabled: true,
@@ -408,68 +506,10 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                   >
                     <div className="flex items-center gap-1.5 font-bold text-xs text-cyan-300 font-mono">
                       <Globe className="w-3.5 h-3.5" />
-                      <span>🌐 Web Project</span>
+                      <span>🌐 Web Platform</span>
                     </div>
                     <p className="text-[10px] text-slate-400 mt-1 leading-snug">
-                      Live Website Preview Link + Locked/Paid Web Source Code.
-                    </p>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData({
-                        ...formData,
-                        category: 'Android App',
-                        pricingType: 'free',
-                        price: 0,
-                        sourceAvailable: true,
-                        sourcePrice: 2000,
-                        previewEnabled: true,
-                        demoImages: formData.demoImages && formData.demoImages.length > 0 ? formData.demoImages : ['https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=1200&q=80']
-                      });
-                    }}
-                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                      formData.category === 'Android App' && formData.pricingType === 'free'
-                        ? 'bg-emerald-500/15 border-emerald-400 text-white shadow-md shadow-emerald-500/10'
-                        : 'bg-slate-900 text-slate-400 border-white/5 hover:border-white/20 hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 font-bold text-xs text-emerald-300 font-mono">
-                      <Smartphone className="w-3.5 h-3.5" />
-                      <span>🟢 Free APK + Paid Source</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-1 leading-snug">
-                      Direct APK download is 100% Free. Source code is Locked & Paid.
-                    </p>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData({
-                        ...formData,
-                        category: 'Android App',
-                        pricingType: 'paid',
-                        price: 3000,
-                        sourceAvailable: true,
-                        sourcePrice: 5000,
-                        previewEnabled: true,
-                        demoImages: formData.demoImages && formData.demoImages.length > 0 ? formData.demoImages : ['https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=1200&q=80']
-                      });
-                    }}
-                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                      formData.category === 'Android App' && formData.pricingType === 'paid' && (formData.price || 0) > 0
-                        ? 'bg-purple-500/15 border-purple-400 text-white shadow-md shadow-purple-500/10'
-                        : 'bg-slate-900 text-slate-400 border-white/5 hover:border-white/20 hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 font-bold text-xs text-purple-300 font-mono">
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>💎 Paid APK (Jarvis AI)</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-1 leading-snug">
-                      Both APK Install and Source Code are Locked & Paid.
+                      Live Web Demo + Web Source Code License.
                     </p>
                   </button>
                 </div>
@@ -1027,6 +1067,75 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
           {/* TAB 4: SOFTWARE & APK BUILD */}
           {activeTab === 'apk' && (
             <div className="space-y-5 animate-in fade-in">
+              {/* Standalone APK Only Option Banner */}
+              <div className="p-4 rounded-2xl bg-[#070b14] border border-cyan-500/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono text-cyan-300 font-bold flex items-center gap-2">
+                    <Smartphone className="w-4 h-4 text-cyan-400" />
+                    <span>Android APK Distribution Mode</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-xs font-mono text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.isApkOnly ?? false}
+                      onChange={(e) => {
+                        const isOnly = e.target.checked;
+                        setFormData({
+                          ...formData,
+                          isApkOnly: isOnly,
+                          sourceAvailable: isOnly ? false : formData.sourceAvailable
+                        });
+                      }}
+                      className="rounded text-cyan-500"
+                    />
+                    <span className="font-bold text-cyan-400">Standalone APK Only (No Source Code)</span>
+                  </label>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Enable this if this product is purely an Android APK (Free or Paid, e.g. CapCut Pro, Mod APK, Utility App) where no source code is needed.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  <div>
+                    <label className="block text-[11px] font-mono text-slate-400 mb-1">APK Badge Style</label>
+                    <select
+                      value={formData.apkBadge || (formData.pricingType === 'free' ? 'Free APK' : 'Pro APK')}
+                      onChange={(e) => setFormData({ ...formData, apkBadge: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none cursor-pointer"
+                    >
+                      <option value="Pro APK">⭐ Pro APK</option>
+                      <option value="Mod APK">🔥 Mod APK</option>
+                      <option value="Premium APK">💎 Premium APK</option>
+                      <option value="Free APK">🟢 Free APK</option>
+                      <option value="Official APK">🛡️ Official APK</option>
+                      <option value="Utility APK">⚡ Utility APK</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono text-slate-400 mb-1">Android Package Name (Optional)</label>
+                    <input
+                      type="text"
+                      value={formData.packageName || ''}
+                      onChange={(e) => setFormData({ ...formData, packageName: e.target.value })}
+                      placeholder="e.g. com.affy.capcutpro"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono text-slate-400 mb-1">Min Android OS Version</label>
+                    <input
+                      type="text"
+                      value={formData.minAndroidVersion || 'Android 8.0+'}
+                      onChange={(e) => setFormData({ ...formData, minAndroidVersion: e.target.value })}
+                      placeholder="e.g. Android 8.0+"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="p-5 rounded-2xl bg-slate-900/80 border border-white/10 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
@@ -1097,138 +1206,159 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
           {/* TAB 5: SOURCE CODE PACKAGE */}
           {activeTab === 'source' && (
             <div className="space-y-5 animate-in fade-in">
-              <div className="p-5 rounded-2xl bg-slate-900/80 border border-white/10 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-sm font-bold text-white font-mono flex items-center gap-2">
-                      <FolderArchive className="w-4 h-4 text-indigo-400" />
-                      <span>Complete Source Code Archive (.ZIP)</span>
-                    </h3>
-                    <p className="text-[11px] text-slate-400">
-                      Upload complete repository ZIP or configure private storage link.
-                    </p>
-                  </div>
-
-                  <label className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer shadow-md shadow-indigo-600/20 shrink-0">
-                    <UploadCloud className="w-4 h-4 text-white" />
-                    <span>Select Source ZIP (.zip)</span>
-                    <input
-                      type="file"
-                      accept=".zip,.tar.gz,.rar"
-                      onChange={handleSourceZipSelect}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-
-                {/* Upload Progress Bar if active */}
-                {sourceUploading && (
-                  <div className="p-3 rounded-xl bg-slate-950 border border-indigo-500/30 space-y-1.5">
-                    <div className="flex justify-between text-xs font-mono text-indigo-400">
-                      <span>Uploading Source Code Archive...</span>
-                      <span>{sourceUploadProgress}%</span>
-                    </div>
-                    <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-                      <div
-                        className="h-full bg-indigo-500 transition-all duration-300"
-                        style={{ width: `${sourceUploadProgress}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-mono text-slate-300 mb-1">Source ZIP Download URL</label>
-                    <input
-                      type="text"
-                      value={formData.sourceZipUrl || ''}
-                      onChange={(e) => setFormData({ ...formData, sourceZipUrl: e.target.value })}
-                      placeholder="https://storage.affyofficial.com/source/project.zip"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-mono text-slate-300 mb-1">Source Code Archive Size</label>
-                    <input
-                      type="text"
-                      value={formData.sourceSize || '15.2 MB'}
-                      onChange={(e) => setFormData({ ...formData, sourceSize: e.target.value })}
-                      placeholder="e.g. 15.2 MB"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Tech Stack Tags Manager */}
-                <div className="space-y-2 pt-2 border-t border-white/5">
-                  <label className="block text-xs font-mono text-slate-300">
-                    Technology Stack & Architecture Frameworks
-                  </label>
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    {formData.techStack?.map((tech, idx) => (
-                      <span
-                        key={idx}
-                        className="px-2.5 py-1 rounded-lg bg-slate-950 text-indigo-300 border border-indigo-500/30 text-xs font-mono flex items-center gap-1.5"
-                      >
-                        <span>{tech}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveTech(idx)}
-                          className="hover:text-rose-400"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newTech}
-                      onChange={(e) => setNewTech(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddTech();
-                        }
-                      }}
-                      placeholder="Add tech (e.g. Kotlin, Jetpack Compose, Express)..."
-                      className="flex-1 px-3.5 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
-                    />
+              {/* Master Source Code Enable/Disable Switch */}
+              <div className="p-4 rounded-2xl bg-slate-900 border border-white/10 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-bold text-white flex items-center gap-2">
+                    <Code2 className="w-4 h-4 text-indigo-400" />
+                    <span>Include Full Source Code License in this Release</span>
+                  </span>
+                  <div className="flex bg-slate-950 p-1 rounded-xl border border-white/10">
                     <button
                       type="button"
-                      onClick={handleAddTech}
-                      className="px-4 py-2 rounded-xl bg-slate-800 text-indigo-300 text-xs font-mono font-bold hover:bg-slate-700 cursor-pointer"
+                      onClick={() => setFormData({ ...formData, sourceAvailable: true, isApkOnly: false })}
+                      className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+                        formData.sourceAvailable
+                          ? 'bg-indigo-600 text-white shadow-md'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
                     >
-                      Add Tag
+                      ON (Source Available)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, sourceAvailable: false, sourcePrice: 0 })}
+                      className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+                        !formData.sourceAvailable
+                          ? 'bg-amber-500 text-black shadow-md font-extrabold'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      OFF (Only APK / Binary)
                     </button>
                   </div>
                 </div>
 
-                {/* About This Source Code (Detailed Structured Breakdown) */}
-                <div className="space-y-2 pt-3 border-t border-white/5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-mono text-indigo-300 font-bold flex items-center gap-1.5">
-                      <Code2 className="w-3.5 h-3.5 text-indigo-400" />
-                      <span>About This Source Code (Structured Points)</span>
-                    </label>
-                    <span className="text-[10px] font-mono text-slate-400">One point per line</span>
-                  </div>
-                  <p className="text-[11px] text-slate-400">
-                    Specify what is included in the source code package, modular architecture, database schemas, and customization guidance.
+                {!formData.sourceAvailable && (
+                  <p className="text-[11px] text-amber-300 font-mono bg-amber-950/30 p-2.5 rounded-xl border border-amber-500/20">
+                    ℹ️ <strong>Source Code Disabled:</strong> This product is configured as <strong>APK / Binary Only</strong> (e.g. CapCut Pro, Free Mod, Utility Tool). Buyers will only have the option to download/buy the APK.
                   </p>
-                  <textarea
-                    rows={4}
-                    value={formData.aboutSource || ''}
-                    onChange={(e) => setFormData({ ...formData, aboutSource: e.target.value })}
-                    placeholder={'1. Complete source code included\n2. Clean and organized project structure\n3. Easy to customize\n4. Included project files and schemas\n5. Standard commercial license included'}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-indigo-500 focus:outline-none leading-relaxed"
-                  />
-                </div>
+                )}
               </div>
+
+              {formData.sourceAvailable && (
+                <div className="p-5 rounded-2xl bg-slate-900/80 border border-white/10 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-bold text-white font-mono flex items-center gap-2">
+                        <FolderArchive className="w-4 h-4 text-indigo-400" />
+                        <span>Complete Source Code Archive (.ZIP)</span>
+                      </h3>
+                      <p className="text-[11px] text-slate-400">
+                        Upload complete repository ZIP or configure private storage link.
+                      </p>
+                    </div>
+
+                    <label className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer shadow-md shadow-indigo-600/20 shrink-0">
+                      <UploadCloud className="w-4 h-4 text-white" />
+                      <span>Select Source ZIP (.zip)</span>
+                      <input
+                        type="file"
+                        accept=".zip,.tar.gz,.rar"
+                        onChange={handleSourceZipSelect}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  {/* Upload Progress Bar if active */}
+                  {sourceUploading && (
+                    <div className="p-3 rounded-xl bg-slate-950 border border-indigo-500/30 space-y-1.5">
+                      <div className="flex justify-between text-xs font-mono text-indigo-400">
+                        <span>Uploading Source Code Archive...</span>
+                        <span>{sourceUploadProgress}%</span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                        <div
+                          className="h-full bg-indigo-500 transition-all duration-300"
+                          style={{ width: `${sourceUploadProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-mono text-slate-300 mb-1">Source ZIP Download URL</label>
+                      <input
+                        type="text"
+                        value={formData.sourceZipUrl || ''}
+                        onChange={(e) => setFormData({ ...formData, sourceZipUrl: e.target.value })}
+                        placeholder="https://storage.affyofficial.com/source/project.zip"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-mono text-slate-300 mb-1">Source Code Archive Size</label>
+                      <input
+                        type="text"
+                        value={formData.sourceSize || '15.2 MB'}
+                        onChange={(e) => setFormData({ ...formData, sourceSize: e.target.value })}
+                        placeholder="e.g. 15.2 MB"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Tech Stack Tags Manager */}
+                  <div className="space-y-2 pt-2 border-t border-white/5">
+                    <label className="block text-xs font-mono text-slate-300">
+                      Technology Stack & Architecture Frameworks
+                    </label>
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {formData.techStack?.map((tech, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2.5 py-1 rounded-lg bg-slate-950 text-indigo-300 border border-indigo-500/30 text-xs font-mono flex items-center gap-1.5"
+                        >
+                          <span>{tech}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTech(idx)}
+                            className="hover:text-rose-400"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newTech}
+                        onChange={(e) => setNewTech(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddTech();
+                          }
+                        }}
+                        placeholder="Add technology (e.g. Kotlin, Compose, Firebase)..."
+                        className="flex-1 px-3.5 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-indigo-500 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddTech}
+                        className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-mono font-bold hover:bg-indigo-500 cursor-pointer"
+                      >
+                        Add Tech
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

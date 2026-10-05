@@ -67,6 +67,11 @@ export interface Product {
   apkPreviewUrl?: string;       // Optional live APK demo/preview link
   websitePreviewUrl?: string;   // Optional live website/web app preview link
   previewEnabled?: boolean;     // Whether preview button is enabled
+  isApkOnly?: boolean;          // True when product is only APK (no source code required, e.g. CapCut Pro, Free Mod APK)
+  apkBadge?: string;            // e.g. 'Pro APK', 'Mod APK', 'Premium APK', 'Official APK'
+  packageName?: string;         // e.g. com.affy.app
+  minAndroidVersion?: string;   // e.g. Android 8.0+
+  productType?: 'apk_only' | 'software' | 'source_code_only' | 'both';
   // Source Code Details
   sourceAvailable: boolean;
   sourcePrice?: number;

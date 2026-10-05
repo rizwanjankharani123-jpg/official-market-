@@ -350,27 +350,32 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           {/* Right Column: Pricing & Purchase Selectors */}
           <div className="lg:col-span-5 space-y-4">
             {/* Option A: Buy Software / Download Free APK */}
-            <div className={`p-5 rounded-2xl space-y-4 ${
+            <div className={`p-5 rounded-2xl space-y-4 shadow-xl ${
               isFree
                 ? 'bg-emerald-950/25 border border-emerald-500/40'
-                : 'bg-slate-900/90 border border-cyan-500/30'
+                : 'bg-gradient-to-br from-slate-900 to-[#0c1220] border border-cyan-500/40'
             }`}>
               <div className="flex items-start justify-between">
                 <div>
                   <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold ${
-                    isFree ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-cyan-500/10 text-cyan-400'
+                    product.apkBadge
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-sm'
+                      : isFree
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
                   }`}>
-                    {isFree ? 'FREE SOFTWARE RELEASE' : 'OPTION 1 • APPLICATION'}
+                    {product.apkBadge ? product.apkBadge : isFree ? 'FREE APPLICATION' : 'APPLICATION RELEASE'}
                   </span>
-                  <h4 className="font-bold text-white text-base mt-1">
-                    {isFree ? 'Direct Free Installation' : 'Software / APK Release'}
+                  <h4 className="font-bold text-white text-base mt-1.5 flex items-center gap-1.5">
+                    <Smartphone className={`w-4 h-4 ${isFree ? 'text-emerald-400' : 'text-cyan-400'}`} />
+                    <span>{isFree ? 'Direct Free APK Download' : product.isApkOnly ? 'Android APK Package' : 'Software / APK Release'}</span>
                   </h4>
-                  <p className="text-[11px] text-slate-400">
-                    {isFree ? 'Compiled Android APK / Executable ready to use.' : 'Ready-to-install binaries & manual.'}
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    {isFree ? 'Compiled Android APK ready to install immediately.' : 'Production compiled APK package with direct download access.'}
                   </p>
                   {isFree ? (
                     <p className="text-[10px] font-mono text-emerald-400 mt-1">
-                      Total Downloads: <strong>{product.downloadsCount || 0}</strong> • No payment needed
+                      Total Downloads: <strong>{product.downloadsCount || 0}</strong> • 100% Free
                     </p>
                   ) : (
                     <p className="text-[10px] font-mono text-cyan-300/80 mt-1">
@@ -378,7 +383,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     </p>
                   )}
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   {isFree ? (
                     <p className="text-2xl font-black text-emerald-400 font-mono">
                       PKR 0 <span className="text-xs font-normal text-slate-400 font-sans">/ Free</span>
@@ -391,14 +396,35 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </div>
               </div>
 
+              {/* APK Specs Grid */}
+              {(product.packageName || product.minAndroidVersion || product.apkSize) && (
+                <div className="p-3 rounded-xl bg-slate-950/70 border border-white/5 grid grid-cols-2 gap-2 text-[10px] font-mono text-slate-300">
+                  {product.packageName && (
+                    <div className="col-span-2 truncate">
+                      <span className="text-slate-500">Package:</span> <span className="text-cyan-400 font-semibold">{product.packageName}</span>
+                    </div>
+                  )}
+                  {product.minAndroidVersion && (
+                    <div>
+                      <span className="text-slate-500">OS:</span> <span className="text-slate-200">{product.minAndroidVersion}</span>
+                    </div>
+                  )}
+                  {product.apkSize && (
+                    <div>
+                      <span className="text-slate-500">Size:</span> <span className="text-slate-200">{product.apkSize}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {isFree ? (
                 <button
                   onClick={handleFreeDownload}
                   disabled={downloadingFree}
-                  className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 cursor-pointer disabled:opacity-50"
+                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:brightness-110 text-black font-extrabold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 btn-shimmer cursor-pointer disabled:opacity-50 active:scale-95"
                 >
                   <DownloadCloud className="w-4 h-4 text-black" />
-                  <span>{downloadingFree ? 'Initiating Download...' : 'Download Free APK / Software'}</span>
+                  <span>{downloadingFree ? 'Preparing Free Download...' : 'Download Free APK (Direct Access)'}</span>
                 </button>
               ) : (
                 <button
@@ -406,27 +432,27 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     onClose();
                     onSelectProduct(product, 'software');
                   }}
-                  className="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs transition-colors flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20 cursor-pointer"
+                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 via-sky-400 to-blue-500 hover:brightness-110 text-black font-extrabold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25 btn-shimmer cursor-pointer active:scale-95"
                 >
-                  <DownloadCloud className="w-4 h-4 text-black" />
-                  <span>Buy Software (PKR {(product.price || 0).toLocaleString()})</span>
+                  <Smartphone className="w-4 h-4 text-black" />
+                  <span>{product.isApkOnly ? `Buy APK (PKR ${(product.price || 0).toLocaleString()})` : `Buy Software (PKR ${(product.price || 0).toLocaleString()})`}</span>
                 </button>
               )}
             </div>
 
             {/* Option B: Buy Source Code License */}
             {product.sourceAvailable && (
-              <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-950/40 to-slate-900 border border-indigo-500/30 space-y-4">
+              <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-950/40 to-slate-900 border border-indigo-500/30 space-y-4 shadow-xl">
                 <div className="flex items-start justify-between">
                   <div>
                     <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 font-bold">
-                      OPTION 2 • DEVELOPER
+                      OPTION 2 • DEVELOPER SOURCE
                     </span>
                     <h4 className="font-bold text-white text-base mt-1">Full Source Code License</h4>
                     <p className="text-[11px] text-slate-400">Complete repo, database schema, and docs.</p>
                     <p className="text-[10px] font-mono text-indigo-300/80 mt-1">Sold: {sourceSales.sold} • Pending: {sourceSales.pending}</p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right shrink-0">
                     <p className="text-2xl font-black text-white font-mono">PKR {(product.sourcePrice || product.price).toLocaleString()}</p>
                   </div>
                 </div>
@@ -441,7 +467,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     onClose();
                     onSelectProduct(product, 'source_code');
                   }}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:brightness-110 text-white font-extrabold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 cursor-pointer"
+                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:brightness-110 text-white font-extrabold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 btn-shimmer cursor-pointer active:scale-95"
                 >
                   <Code2 className="w-4 h-4 text-white" />
                   <span>Buy Source Code (PKR {(product.sourcePrice || product.price).toLocaleString()})</span>
@@ -453,7 +479,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <div className="p-4 rounded-xl bg-[#06080e] border border-white/5 text-xs text-slate-400 space-y-1">
               <p className="font-mono text-emerald-400 font-semibold flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Support Terms</span>
+                <span>Verified Architecture & Support</span>
               </p>
               <p className="text-[11px] leading-relaxed">{product.supportTerms}</p>
             </div>

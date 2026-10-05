@@ -394,10 +394,11 @@ export const SoftwareMarketplace: React.FC<SoftwareMarketplaceProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredAndSortedProducts.map((product) => {
           const isFree = product.pricingType === 'free' || product.price === 0;
+          const isApk = product.isApkOnly || product.category === 'Android App';
           return (
             <div
               key={product.id}
-              className={`rounded-2xl bg-[#090d16] border transition-all duration-300 flex flex-col justify-between overflow-hidden text-left group shadow-lg shadow-black/40 ${
+              className={`rounded-2xl bg-[#090d16] border transition-all duration-300 flex flex-col justify-between overflow-hidden text-left group shadow-lg shadow-black/40 card-elevate ${
                 isFree ? 'border-emerald-500/30 hover:border-emerald-500/60 hover:shadow-emerald-950/30' : 'border-white/10 hover:border-cyan-500/40 hover:shadow-cyan-950/30'
               }`}
             >
@@ -424,12 +425,17 @@ export const SoftwareMarketplace: React.FC<SoftwareMarketplaceProps> = ({
                   {/* Badges */}
                   <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
                     {product.featured && (
-                      <span className="px-2.5 py-1 rounded-md bg-amber-500 text-black font-extrabold text-[10px] font-mono shadow-md shadow-amber-500/20 flex items-center gap-1">
+                      <span className="px-2.5 py-1 rounded-md bg-amber-500 text-black font-extrabold text-[10px] font-mono shadow-md shadow-amber-500/20 flex items-center gap-1 animate-pulse-glow">
                         <Sparkles className="w-3 h-3 text-black" />
                         ⭐ Featured
                       </span>
                     )}
-                    {isFree ? (
+                    {product.apkBadge ? (
+                      <span className="px-2.5 py-1 rounded-md bg-gradient-to-r from-amber-500 to-orange-500 text-black font-extrabold text-[10px] font-mono shadow-md shadow-amber-500/30 flex items-center gap-1">
+                        <Smartphone className="w-3 h-3" />
+                        {product.apkBadge}
+                      </span>
+                    ) : isFree ? (
                       <span className="px-2.5 py-1 rounded-md bg-emerald-500 text-black font-extrabold text-[10px] font-mono shadow-md shadow-emerald-500/30 uppercase tracking-wider">
                         FREE
                       </span>
@@ -553,7 +559,7 @@ export const SoftwareMarketplace: React.FC<SoftwareMarketplaceProps> = ({
                 <div className="pt-4 border-t border-white/10 flex items-center justify-between">
                   <div>
                     <p className={`text-[10px] uppercase font-mono ${isFree ? 'text-emerald-400 font-bold' : 'text-slate-400'}`}>
-                      {isFree ? 'Free Full License' : 'Software / APK License'}
+                      {isFree ? 'Free Full License' : isApk ? 'Android APK Package' : 'Software / App License'}
                     </p>
                     {isFree ? (
                       <p className="text-2xl font-black text-emerald-400 font-mono">
@@ -568,7 +574,7 @@ export const SoftwareMarketplace: React.FC<SoftwareMarketplaceProps> = ({
 
                   <button
                     onClick={() => onOpenDetails(product)}
-                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 transition-colors cursor-pointer"
+                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 transition-all btn-shimmer cursor-pointer"
                     title="View Screenshots & Specs"
                   >
                     <Eye className="w-4 h-4" />
@@ -580,7 +586,7 @@ export const SoftwareMarketplace: React.FC<SoftwareMarketplaceProps> = ({
                     <button
                       onClick={() => handleFreeDownload(product)}
                       disabled={downloadingId === product.id}
-                      className="w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 cursor-pointer disabled:opacity-50"
+                      className="w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 btn-shimmer cursor-pointer disabled:opacity-50"
                     >
                       <DownloadCloud className="w-3.5 h-3.5 text-black" />
                       <span>{downloadingId === product.id ? 'Downloading...' : 'Download Free'}</span>
@@ -588,17 +594,17 @@ export const SoftwareMarketplace: React.FC<SoftwareMarketplaceProps> = ({
                   ) : (
                     <button
                       onClick={() => onSelectProduct(product, 'software')}
-                      className="w-full py-2.5 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20 cursor-pointer"
+                      className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:brightness-110 text-black font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20 btn-shimmer cursor-pointer"
                     >
-                      <DownloadCloud className="w-3.5 h-3.5 text-black" />
-                      <span>Buy Software</span>
+                      {isApk ? <Smartphone className="w-3.5 h-3.5 text-black" /> : <DownloadCloud className="w-3.5 h-3.5 text-black" />}
+                      <span>{isApk ? 'Buy APK' : 'Buy Software'}</span>
                     </button>
                   )}
 
                   {product.sourceAvailable ? (
                     <button
                       onClick={() => onSelectProduct(product, 'source_code')}
-                      className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-indigo-300 hover:text-white border border-indigo-500/30 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-indigo-300 hover:text-white border border-indigo-500/30 font-bold text-xs transition-all flex items-center justify-center gap-1.5 btn-shimmer cursor-pointer"
                     >
                       <Code2 className="w-3.5 h-3.5 text-indigo-400" />
                       <span>Get Source</span>
@@ -606,9 +612,9 @@ export const SoftwareMarketplace: React.FC<SoftwareMarketplaceProps> = ({
                   ) : (
                     <button
                       onClick={() => onOpenDetails(product)}
-                      className="w-full py-2.5 px-3 rounded-xl bg-slate-900 text-slate-300 hover:text-white border border-white/10 font-medium text-xs transition-colors cursor-pointer"
+                      className="w-full py-2.5 px-3 rounded-xl bg-slate-900 text-slate-300 hover:text-white border border-white/10 font-medium text-xs transition-all btn-shimmer cursor-pointer"
                     >
-                      Details
+                      Details & Info
                     </button>
                   )}
                 </div>

@@ -100,12 +100,15 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {featuredProducts.map((product) => {
           const isFree = product.pricingType === 'free' || product.price === 0;
+          const isApk = product.isApkOnly || product.category === 'Android App';
           return (
             <div
               key={product.id}
-              className={`rounded-3xl bg-[#090d16] border transition-all duration-300 flex flex-col justify-between overflow-hidden text-left group shadow-xl shadow-black/60 relative ${
+              className={`rounded-3xl bg-[#090d16] border transition-all duration-300 flex flex-col justify-between overflow-hidden text-left group shadow-xl shadow-black/60 relative card-elevate ${
                 isFree
                   ? 'border-emerald-500/30 hover:border-emerald-500/60 hover:shadow-emerald-950/30'
+                  : isApk
+                  ? 'border-cyan-500/30 hover:border-cyan-400 hover:shadow-cyan-950/40'
                   : 'border-amber-500/30 hover:border-cyan-500/50 hover:shadow-cyan-950/40'
               }`}
             >
@@ -140,6 +143,17 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                       ⭐ Featured
                     </span>
 
+                    {/* APK Badge if present */}
+                    {product.apkBadge ? (
+                      <span className="px-2.5 py-1 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-black text-[10px] font-mono shadow-md shadow-cyan-500/30 uppercase tracking-wider animate-pulse">
+                        {product.apkBadge}
+                      </span>
+                    ) : isApk ? (
+                      <span className="px-2.5 py-1 rounded-md bg-cyan-900/90 text-cyan-300 font-bold text-[10px] font-mono border border-cyan-400/40">
+                        📱 APK Only
+                      </span>
+                    ) : null}
+
                     {/* Free or Paid Pill */}
                     {isFree ? (
                       <span className="px-2.5 py-1 rounded-md bg-emerald-500 text-black font-extrabold text-[10px] font-mono shadow-md shadow-emerald-500/30 uppercase tracking-wider">
@@ -163,7 +177,7 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                         e.stopPropagation();
                         toggleWishlist(product.id);
                       }}
-                      className={`p-1.5 rounded-md backdrop-blur-md border transition-colors cursor-pointer ${
+                      className={`p-1.5 rounded-md backdrop-blur-md border transition-colors cursor-pointer active:scale-90 ${
                         isInWishlist(product.id)
                           ? 'bg-rose-500/20 border-rose-500/40 text-rose-400'
                           : 'bg-black/70 border-white/10 text-slate-400 hover:text-white'
@@ -237,8 +251,8 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                     );
                   })()}
 
-                  {/* Source Code Upsell Banner if available */}
-                  {product.sourceAvailable && (
+                  {/* Source Code Upsell Banner if available and not APK-only */}
+                  {product.sourceAvailable && !product.isApkOnly && (
                     <div className="p-2.5 rounded-xl bg-indigo-950/30 border border-indigo-500/20 flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2 text-indigo-300">
                         <Code2 className="w-4 h-4 text-indigo-400 shrink-0" />
@@ -253,7 +267,9 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                   {/* Price & Primary Action */}
                   <div className="pt-2 border-t border-white/5 flex items-center justify-between">
                     <div>
-                      <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Pricing Model</p>
+                      <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+                        {isApk ? 'APK Package' : 'Pricing Model'}
+                      </p>
                       {isFree ? (
                         <div className="flex items-baseline gap-1.5">
                           <span className="text-xl font-black text-emerald-400 font-mono">FREE</span>
@@ -272,7 +288,7 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => onOpenDetails(product)}
-                        className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 transition-colors cursor-pointer"
+                        className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 transition-colors cursor-pointer active:scale-95"
                         title="View Architecture Details"
                       >
                         <Eye className="w-4 h-4" />
@@ -282,17 +298,17 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                         <button
                           onClick={() => handleFreeDownload(product)}
                           disabled={downloadingId === product.id}
-                          className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-50"
+                          className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-50 btn-shimmer"
                         >
                           <DownloadCloud className="w-4 h-4 text-black" />
-                          <span>{downloadingId === product.id ? 'Downloading...' : 'Download Free'}</span>
+                          <span>{downloadingId === product.id ? 'Downloading...' : isApk ? 'Download APK' : 'Download Free'}</span>
                         </button>
                       ) : (
                         <button
                           onClick={() => onSelectProduct(product, 'software')}
-                          className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 shadow-lg shadow-cyan-500/20 transition-all cursor-pointer"
+                          className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 shadow-lg shadow-cyan-500/20 transition-all cursor-pointer btn-shimmer"
                         >
-                          <span>Buy Access</span>
+                          <span>{isApk ? 'Buy APK' : 'Buy Access'}</span>
                           <ChevronRight className="w-4 h-4 text-black" />
                         </button>
                       )}
