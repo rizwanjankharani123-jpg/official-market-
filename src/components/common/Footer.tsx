@@ -22,10 +22,27 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = () => {
   const { settings, setActiveView } = useApp();
+  const [secretClickCount, setSecretClickCount] = React.useState(0);
+  const clickTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   const handleNav = (view: string) => {
     setActiveView(view);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSecretAccess = () => {
+    if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
+    const newCount = secretClickCount + 1;
+    if (newCount >= 3) {
+      setSecretClickCount(0);
+      setActiveView('admin');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      setSecretClickCount(newCount);
+      clickTimeoutRef.current = setTimeout(() => {
+        setSecretClickCount(0);
+      }, 1500);
+    }
   };
 
   return (
@@ -229,7 +246,11 @@ export const Footer: React.FC<FooterProps> = () => {
             <span className="font-mono text-cyan-400/80">Aftab — Web Developer & Software Developer</span>
           </div>
 
-          <div className="flex items-center gap-2 text-[11px] text-slate-500 font-mono">
+          <div
+            onClick={handleSecretAccess}
+            className="flex items-center gap-2 text-[11px] text-slate-500 font-mono select-none cursor-default"
+            title=""
+          >
             <span>Verified Secure Platform</span>
           </div>
         </div>

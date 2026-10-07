@@ -165,11 +165,31 @@ export const Navbar: React.FC = () => {
     { id: 'terms', label: 'Terms & Licensing', icon: ShieldCheck, tag: 'Legal' },
   ];
 
-  const handleNavClick = (id: string) => {
-    setActiveView(id);
+  const logoClickCountRef = React.useRef(0);
+  const logoTimerRef = React.useRef<any>(null);
+
+  const handleNavClick = (viewId: string) => {
+    setActiveView(viewId);
     setMobileMenuOpen(false);
     setMoreDropdownOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleLogoClick = () => {
+    logoClickCountRef.current += 1;
+    if (logoTimerRef.current) clearTimeout(logoTimerRef.current);
+
+    if (logoClickCountRef.current >= 4) {
+      logoClickCountRef.current = 0;
+      window.dispatchEvent(new CustomEvent('affy:open-admin'));
+      return;
+    }
+
+    logoTimerRef.current = setTimeout(() => {
+      logoClickCountRef.current = 0;
+    }, 1500);
+
+    handleNavClick('home');
   };
 
   const isMoreActive = secondaryNavLinks.some((l) => l.id === activeView);
@@ -205,7 +225,7 @@ export const Navbar: React.FC = () => {
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
           {/* Brand Logo */}
           <button
-            onClick={() => handleNavClick('home')}
+            onClick={handleLogoClick}
             className="flex items-center gap-2.5 sm:gap-3 group text-left focus:outline-none cursor-pointer shrink-0 min-w-0"
           >
             <div className="relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 p-[1px] shadow-lg shadow-cyan-500/20 shrink-0">

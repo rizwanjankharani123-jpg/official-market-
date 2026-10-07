@@ -85,27 +85,44 @@ const MainAppContent: React.FC = () => {
   const [trackingOrderId, setTrackingOrderId] = useState<string>('');
   const [trackingEmail, setTrackingEmail] = useState<string>('');
 
-  // Handle comprehensive URL route sync on boot & navigation (e.g. /admin, /#admin, ?view=admin, etc.)
+  // Handle comprehensive URL route sync on boot & navigation (e.g. /admin, /ladmin, /#admin, /#ladmin, ?admin, etc.)
   useEffect(() => {
     const checkRoute = () => {
       const pathname = window.location.pathname.replace(/^\/+/, '').replace(/\/+$/, '').toLowerCase();
       const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase();
       const searchParams = new URLSearchParams(window.location.search);
       const viewParam = searchParams.get('view')?.toLowerCase() || searchParams.get('page')?.toLowerCase();
-      const isAdminQuery = searchParams.get('admin') === 'true' || searchParams.get('admin') === '1';
+      const hasAdminParam =
+        searchParams.has('admin') ||
+        searchParams.has('ladmin') ||
+        searchParams.get('admin') === 'true' ||
+        searchParams.get('admin') === '1' ||
+        searchParams.get('ladmin') === 'true' ||
+        searchParams.get('ladmin') === '1';
 
-      // Check for admin routes
-      if (
+      // Check for all admin routes & secret aliases
+      const isAdminRoute =
         pathname === 'admin' ||
+        pathname === 'ladmin' ||
+        pathname.startsWith('admin/') ||
+        pathname.startsWith('ladmin/') ||
         pathname === 'affy-admin' ||
         pathname === 'admin-portal' ||
         pathname === 'secret-admin' ||
+        pathname === 'adminlogin' ||
+        pathname === 'login' ||
         hash === 'admin' ||
+        hash === 'ladmin' ||
         hash === 'affy-admin' ||
+        hash === 'adminlogin' ||
+        hash === 'login' ||
+        hash === 'admin-portal' ||
         viewParam === 'admin' ||
+        viewParam === 'ladmin' ||
         viewParam === 'affy-admin' ||
-        isAdminQuery
-      ) {
+        hasAdminParam;
+
+      if (isAdminRoute) {
         setActiveView('admin');
         return;
       }
@@ -123,9 +140,36 @@ const MainAppContent: React.FC = () => {
     checkRoute();
     window.addEventListener('popstate', checkRoute);
     window.addEventListener('hashchange', checkRoute);
+
+    // Fast interval check for 5 seconds to catch delayed iframe url changes
+    const routeInterval = setInterval(checkRoute, 1000);
+
+    // Global keyboard shortcut: Ctrl+Shift+A or Cmd+Shift+A or Alt+A to jump to Admin
+    const handleKeyShortcut = (e: KeyboardEvent) => {
+      if (
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) ||
+        (e.altKey && (e.key === 'a' || e.key === 'A'))
+      ) {
+        e.preventDefault();
+        setActiveView('admin');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+    window.addEventListener('keydown', handleKeyShortcut);
+
+    // Secret custom event trigger
+    const handleSecretAdminEvent = () => {
+      setActiveView('admin');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    window.addEventListener('affy:open-admin', handleSecretAdminEvent);
+
     return () => {
+      clearInterval(routeInterval);
       window.removeEventListener('popstate', checkRoute);
       window.removeEventListener('hashchange', checkRoute);
+      window.removeEventListener('keydown', handleKeyShortcut);
+      window.removeEventListener('affy:open-admin', handleSecretAdminEvent);
     };
   }, [setActiveView]);
 
@@ -174,13 +218,6 @@ const MainAppContent: React.FC = () => {
     setActiveView('track-order');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  // If user explicitly visits admin view while unauthenticated, trigger modal
-  useEffect(() => {
-    if (activeView === 'admin' && !isAdminAuthenticated) {
-      setIsAdminLoginOpen(true);
-    }
-  }, [activeView, isAdminAuthenticated]);
 
   return (
     <div className="min-h-screen bg-[#030712] text-slate-100 flex flex-col selection:bg-cyan-500 selection:text-black">
@@ -486,16 +523,6 @@ const MainAppContent: React.FC = () => {
       <CertificateModal
         orderId={selectedCertOrderId}
         onClose={() => setSelectedCertOrderId(null)}
-      />
-
-      {/* 5. Admin Authentication Modal */}
-      <AdminLoginModal
-        isOpen={isAdminLoginOpen}
-        onClose={() => setIsAdminLoginOpen(false)}
-        onSuccess={() => {
-          setActiveView('admin');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
       />
     </div>
   );
