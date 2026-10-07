@@ -194,9 +194,9 @@ const MainAppContent: React.FC = () => {
 
       {/* Main View Router */}
       <main className="flex-1 w-full">
-        {/* VIEW: HOME / COMPLETE OVERVIEW */}
+        {/* VIEW: HOME / COMPLETE OVERVIEW (Focused 100% on APKs, Apps & Marketplace) */}
         {activeView === 'home' && (
-          <div>
+          <div className="space-y-4">
             <HeroSection />
             <FeaturedProducts
               onSelectProduct={handleInitiatePurchase}
@@ -212,26 +212,18 @@ const MainAppContent: React.FC = () => {
               onOpenDetails={(p) => setDetailedProduct(p)}
               limit={6}
             />
-            <AboutSection />
-            <SoftwareMarketplace
-              onSelectProduct={handleInitiatePurchase}
+            <FreeMarketplace
               onOpenDetails={(p) => setDetailedProduct(p)}
+              onSelectProduct={handleInitiatePurchase}
             />
             <ProductBundlesView
               onSelectBundle={handleInitiateBundlePurchase}
               onOpenProductDetails={(p) => setDetailedProduct(p)}
             />
-            <FreeMarketplace
-              onOpenDetails={(p) => setDetailedProduct(p)}
-              onSelectProduct={handleInitiatePurchase}
-            />
-            <SourceCodeMarketplace
+            <SoftwareMarketplace
               onSelectProduct={handleInitiatePurchase}
               onOpenDetails={(p) => setDetailedProduct(p)}
             />
-            <ProjectsSection />
-            <ServicesSection />
-            <ContactSection />
           </div>
         )}
 
@@ -389,10 +381,13 @@ const MainAppContent: React.FC = () => {
           </div>
         )}
 
-        {/* VIEW: FEATURED PORTFOLIO */}
+        {/* VIEW: FEATURED PORTFOLIO & DEVELOPER BIO */}
         {activeView === 'portfolio' && (
-          <div className="pt-6">
+          <div className="pt-6 space-y-8">
+            <AboutSection />
             <ProjectsSection />
+            <ServicesSection />
+            <ContactSection />
           </div>
         )}
 

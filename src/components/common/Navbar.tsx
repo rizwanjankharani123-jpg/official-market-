@@ -197,17 +197,6 @@ export const Navbar: React.FC = () => {
                 <MessageSquare className="w-3 h-3 text-emerald-400" />
                 <span className="hidden xs:inline">WHATSAPP</span>
               </a>
-
-              {isAdminAuthenticated && (
-                <button
-                  onClick={() => handleNavClick('admin')}
-                  className="inline-flex items-center gap-1 font-mono text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold cursor-pointer"
-                >
-                  <Terminal className="w-3 h-3 text-cyan-400" />
-                  <span className="hidden sm:inline">ADMIN PANEL ACTIVE</span>
-                  <span className="sm:hidden">ADMIN</span>
-                </button>
-              )}
             </div>
           </div>
         </div>

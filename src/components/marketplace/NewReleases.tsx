@@ -140,11 +140,19 @@ export const NewReleases: React.FC<NewReleasesProps> = ({
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 z-10" />
 
               <div>
-                {/* Product Screenshot / Image */}
+                {/* Product Screenshot / Image with Auto-Adjust Fit */}
                 <div
                   onClick={() => onOpenDetails(product)}
-                  className="relative aspect-[16/10] bg-slate-950 overflow-hidden cursor-pointer"
+                  className="relative aspect-[16/10] bg-slate-950 overflow-hidden cursor-pointer flex items-center justify-center"
                 >
+                  {/* Ambient Blurred Background (Fills letterboxing for 1:1 or 16:9 images) */}
+                  <img
+                    src={getSafeProductImage(product.demoImages, product.category)}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110"
+                  />
+                  {/* Foreground Auto-Fitted Image */}
                   <img
                     src={getSafeProductImage(product.demoImages, product.category)}
                     alt={product.name}
@@ -155,9 +163,9 @@ export const NewReleases: React.FC<NewReleasesProps> = ({
                         target.src = fallback;
                       }
                     }}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="relative z-1 w-full h-full object-contain sm:object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#090d16] via-transparent to-transparent opacity-90" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#090d16] via-transparent to-transparent opacity-80 z-2" />
 
                   {/* Badges Overlay */}
                   <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">

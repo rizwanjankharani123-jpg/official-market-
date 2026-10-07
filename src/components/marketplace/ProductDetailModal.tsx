@@ -211,8 +211,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           )}
         </div>
 
-        {/* Screenshot Gallery Carousel */}
-        <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-[16/9] mb-8 border border-white/10 group">
+        {/* Screenshot Gallery Carousel with Auto-Adjust Fit */}
+        <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-[16/9] mb-8 border border-white/10 group flex items-center justify-center">
+          {/* Ambient Blurred Background (Fills letterboxing for 1:1 or 16:9 images) */}
+          <img
+            src={getSafeProductImage(product.demoImages && product.demoImages.length > 0 ? [product.demoImages[activeImageIndex]] : [], product.category)}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-110"
+          />
+          {/* Foreground Auto-Fitted Image */}
           <img
             src={getSafeProductImage(product.demoImages && product.demoImages.length > 0 ? [product.demoImages[activeImageIndex]] : [], product.category)}
             alt={`${product.name} screenshot`}
@@ -223,7 +231,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 target.src = fallback;
               }
             }}
-            className="w-full h-full object-cover"
+            className="relative z-1 w-full h-full object-contain p-1"
           />
 
           {product.demoImages && product.demoImages.length > 1 && (

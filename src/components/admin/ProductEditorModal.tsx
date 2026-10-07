@@ -724,50 +724,92 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
             <div className="space-y-6 animate-in fade-in">
               {/* Primary Cover Image */}
               <div className="p-5 rounded-2xl bg-slate-900/80 border border-white/10 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-bold text-white font-mono flex items-center gap-2">
                       <ImageIcon className="w-4 h-4 text-cyan-400" />
-                      <span>Primary Cover Image</span>
+                      <span>Product Cover / App Image (Auto-Adjusted)</span>
                     </h3>
                     <p className="text-[11px] text-slate-400">
-                      Recommended aspect ratio: <strong>16:10 or 16:9</strong> (e.g. 1200x750px).
+                      Supports <strong>YouTube 16:9 Thumbnails</strong>, <strong>Profile / Square 1:1 Icons</strong>, and ImgBB links.
                     </p>
                   </div>
 
-                  <label className="px-3.5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer shadow-md shadow-cyan-500/20 shrink-0">
-                    <UploadCloud className="w-4 h-4 text-black" />
-                    <span>Upload Cover File</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleCoverFileUpload}
-                      className="hidden"
-                    />
-                  </label>
+                  <div className="flex items-center gap-2">
+                    <label className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:brightness-110 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-cyan-500/20 shrink-0 btn-shimmer active:scale-95">
+                      <UploadCloud className="w-4 h-4 text-black" />
+                      <span>Direct Image Upload</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCoverFileUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                 </div>
 
-                {/* Preview Box */}
-                <div className="relative aspect-[16/9] max-w-md mx-auto rounded-2xl overflow-hidden bg-slate-950 border border-cyan-500/30">
-                  {formData.demoImages && formData.demoImages[0] ? (
-                    <img
-                      src={formData.demoImages[0]}
-                      alt="Product Cover Preview"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-slate-500 text-xs font-mono space-y-2">
-                      <ImageIcon className="w-8 h-8" />
-                      <span>No cover image selected</span>
-                    </div>
-                  )}
+                {/* Direct ImgBB or Image Link Input */}
+                <div className="p-3.5 rounded-2xl bg-slate-950 border border-cyan-500/30 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-mono text-cyan-300 font-bold">
+                      ImgBB Link or Direct Image URL:
+                    </label>
+                    <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-500/20 font-semibold">
+                      i.ibb.co / Direct Link Supported
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    value={formData.demoImages?.[0] || ''}
+                    onChange={(e) => {
+                      let val = e.target.value.trim();
+                      const updated = [...(formData.demoImages || [])];
+                      if (updated.length > 0) updated[0] = val;
+                      else updated.push(val);
+                      setFormData({ ...formData, demoImages: updated });
+                    }}
+                    placeholder="https://i.ibb.co/xyz/image.png or https://images.unsplash.com/..."
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-400 focus:outline-none"
+                  />
+                  <p className="text-[10px] text-slate-400">
+                    💡 Tip: If using <strong>ImgBB</strong>, paste the direct image link (e.g. <code className="text-cyan-300">https://i.ibb.co/abcd123/photo.png</code>).
+                  </p>
+                </div>
+
+                {/* Dual-Layer Auto-Adjusted Preview Box */}
+                <div className="space-y-1.5">
+                  <p className="text-[11px] font-mono text-slate-400 uppercase">Live Auto-Adjusted Preview (YouTube 16:9 & Square Compatible):</p>
+                  <div className="relative aspect-[16/9] max-w-lg mx-auto rounded-2xl overflow-hidden bg-slate-950 border border-cyan-500/40 shadow-xl flex items-center justify-center">
+                    {formData.demoImages && formData.demoImages[0] ? (
+                      <>
+                        {/* Ambient Blurred Background Layer (Fills any letterbox seamlessly) */}
+                        <img
+                          src={formData.demoImages[0]}
+                          alt="Ambient Background"
+                          className="absolute inset-0 w-full h-full object-cover blur-xl opacity-35 scale-110"
+                        />
+                        {/* Crisp Foreground Auto-Fitted Image */}
+                        <img
+                          src={formData.demoImages[0]}
+                          alt="Product Cover Preview"
+                          className="relative z-10 w-full h-full object-contain p-1"
+                        />
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full text-slate-500 text-xs font-mono space-y-2">
+                        <ImageIcon className="w-8 h-8 text-slate-600" />
+                        <span>No image uploaded yet</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* One-Click Presets */}
                 <div className="space-y-1.5 pt-2 border-t border-white/5">
                   <p className="text-[11px] font-mono text-cyan-400 font-bold flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>Quick HD Image Presets (Click to apply):</span>
+                    <span>Quick HD Stock Image Presets (Click to apply):</span>
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {[
@@ -793,22 +835,6 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                       </button>
                     ))}
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-mono text-slate-400 mb-1">Cover Image URL (or paste direct link):</label>
-                  <input
-                    type="text"
-                    value={formData.demoImages?.[0] || ''}
-                    onChange={(e) => {
-                      const updated = [...(formData.demoImages || [])];
-                      if (updated.length > 0) updated[0] = e.target.value;
-                      else updated.push(e.target.value);
-                      setFormData({ ...formData, demoImages: updated });
-                    }}
-                    placeholder="https://images.unsplash.com/..."
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
-                  />
                 </div>
               </div>
 
