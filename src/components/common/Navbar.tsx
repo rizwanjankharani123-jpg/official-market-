@@ -503,19 +503,11 @@ export const Navbar: React.FC = () => {
                   href={`https://wa.me/${OFFICIAL_WHATSAPP_NUMBER.replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Hi Aftab, I am reaching out from AFFY OFFICIAL.')}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-[11px] font-mono font-semibold transition-all"
+                  className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-[11px] font-mono font-semibold transition-all"
                 >
                   <MessageSquare className="w-3.5 h-3.5" />
-                  <span>WhatsApp Support</span>
+                  <span>WhatsApp Official Support</span>
                 </a>
-
-                <button
-                  onClick={() => handleNavClick('admin')}
-                  className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 text-[11px] font-mono transition-all cursor-pointer"
-                >
-                  <Lock className="w-3 h-3 text-cyan-400" />
-                  <span>Admin</span>
-                </button>
               </div>
             </div>
           </div>
