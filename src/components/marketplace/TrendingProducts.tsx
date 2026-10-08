@@ -231,19 +231,21 @@ export const TrendingProducts: React.FC<TrendingProductsProps> = ({
                     </p>
                   </div>
 
-                  {/* Feature Highlights */}
-                  <div className="space-y-1.5 pt-2 border-t border-white/5">
-                    {product.features.slice(0, 3).map((feat, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-xs text-slate-300">
-                        <Check
-                          className={`w-3.5 h-3.5 shrink-0 ${
-                            isFree ? 'text-emerald-400' : 'text-cyan-400'
-                          }`}
-                        />
-                        <span className="truncate">{feat}</span>
-                      </div>
-                    ))}
-                  </div>
+                  {/* Feature Highlights (Only if features exist) */}
+                  {Boolean(product.features && product.features.length > 0 && product.features.some(f => f && f.trim().length > 0)) && (
+                    <div className="space-y-1.5 pt-2 border-t border-white/5">
+                      {product.features.filter(f => f && f.trim().length > 0).slice(0, 3).map((feat, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-xs text-slate-300">
+                          <Check
+                            className={`w-3.5 h-3.5 shrink-0 ${
+                              isFree ? 'text-emerald-400' : 'text-cyan-400'
+                            }`}
+                          />
+                          <span className="truncate">{feat}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Real Activity / Popularity Metrics Bar */}
                   <div className="flex items-center justify-between text-[11px] font-mono px-3 py-2 rounded-xl bg-[#06080e] border border-rose-500/20 gap-2 flex-wrap">

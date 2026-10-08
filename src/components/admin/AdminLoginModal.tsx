@@ -87,19 +87,22 @@ export const AdminLoginForm: React.FC<AdminLoginFormProps> = ({
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-mono text-slate-300 mb-1">Admin Email</label>
+          <label className="block text-xs font-mono text-slate-300 mb-1">Admin Email / Username</label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
             <input
-              type="email"
+              type="text"
               required
-              autoComplete="off"
+              autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
                 if (error) setError('');
               }}
-              placeholder=""
+              placeholder="affyofficial.dev@gmail.com"
               className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:border-cyan-500 focus:outline-none font-mono"
             />
           </div>
@@ -131,13 +134,16 @@ export const AdminLoginForm: React.FC<AdminLoginFormProps> = ({
             <input
               type={showPassword ? 'text' : 'password'}
               required
-              autoComplete="off"
+              autoComplete="current-password"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
                 if (error) setError('');
               }}
-              placeholder=""
+              placeholder="••••••••••••"
               className="w-full pl-9 pr-10 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:border-cyan-500 focus:outline-none font-mono"
             />
             <button

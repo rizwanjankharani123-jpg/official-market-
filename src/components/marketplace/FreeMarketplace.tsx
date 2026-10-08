@@ -225,20 +225,22 @@ export const FreeMarketplace: React.FC<FreeMarketplaceProps> = ({
                   </p>
                 </div>
 
-                {/* Key Features */}
-                <div className="space-y-1.5 pt-2 border-t border-white/5">
-                  {product.features.slice(0, 3).map((feat, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-xs text-slate-300">
-                      <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                      <span className="truncate">{feat}</span>
-                    </div>
-                  ))}
-                  {product.features.length > 3 && (
-                    <p className="text-[11px] text-slate-400 font-mono pl-5">
-                      +{product.features.length - 3} additional features
-                    </p>
-                  )}
-                </div>
+                {/* Key Features (Only if features exist) */}
+                {Boolean(product.features && product.features.length > 0 && product.features.some(f => f && f.trim().length > 0)) && (
+                  <div className="space-y-1.5 pt-2 border-t border-white/5">
+                    {product.features.filter(f => f && f.trim().length > 0).slice(0, 3).map((feat, idx) => (
+                      <div key={idx} className="flex items-center gap-2 text-xs text-slate-300">
+                        <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span className="truncate">{feat}</span>
+                      </div>
+                    ))}
+                    {product.features.filter(f => f && f.trim().length > 0).length > 3 && (
+                      <p className="text-[11px] text-slate-400 font-mono pl-5">
+                        +{product.features.filter(f => f && f.trim().length > 0).length - 3} additional features
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Real Product Statistics */}
                 <div className="flex items-center justify-between text-[11px] font-mono px-3 py-2 rounded-xl bg-[#06080e] border border-white/5 gap-2 flex-wrap">

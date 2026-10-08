@@ -268,23 +268,26 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
           {/* Left Column: Full Description & Specs */}
           <div className="lg:col-span-7 space-y-6">
-            <div>
-              <h3 className="font-bold text-white text-base font-mono mb-2 flex items-center gap-2">
-                <Info className="w-4 h-4 text-cyan-400" />
-                <span>Product Overview</span>
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                {product.fullDescription}
-              </p>
-            </div>
+            {/* Detailed Description */}
+            {Boolean(product.fullDescription && product.fullDescription.trim().length > 0) && (
+              <div>
+                <h3 className="font-bold text-white text-base font-mono mb-2 flex items-center gap-2">
+                  <Info className="w-4 h-4 text-cyan-400" />
+                  <span>Product Overview</span>
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed whitespace-pre-line">
+                  {product.fullDescription}
+                </p>
+              </div>
+            )}
 
             {/* Structured Content: About This Software */}
-            {product.aboutSoftware && product.aboutSoftware.trim().length > 0 && (
+            {Boolean(product.aboutSoftware && product.aboutSoftware.trim().length > 0) && (
               <div className="p-4 sm:p-5 rounded-2xl bg-[#0b0f19] border border-cyan-500/20 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-white text-sm sm:text-base font-mono flex items-center gap-2">
                     <Smartphone className="w-4 h-4 text-cyan-400" />
-                    <span className="tracking-wide">ABOUT THIS SOFTWARE</span>
+                    <span className="tracking-wide">ABOUT THIS APP</span>
                   </h3>
                   <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
                     Application Release
@@ -295,7 +298,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             )}
 
             {/* Structured Content: About This Source Code */}
-            {product.sourceAvailable && product.aboutSource && product.aboutSource.trim().length > 0 && (
+            {Boolean(product.sourceAvailable && product.aboutSource && product.aboutSource.trim().length > 0) && (
               <div className="p-4 sm:p-5 rounded-2xl bg-[#0b0f19] border border-indigo-500/25 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-white text-sm sm:text-base font-mono flex items-center gap-2">
@@ -310,49 +313,55 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
             )}
 
-            {/* Key Features */}
-            <div>
-              <h3 className="font-bold text-white text-base font-mono mb-3 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-cyan-400" />
-                <span>Engineered Capabilities</span>
-              </h3>
-              <div className="space-y-2">
-                {product.features.map((feat, idx) => (
-                  <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-300 p-2 rounded-lg bg-slate-900/60 border border-white/5">
-                    <Check className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-                    <span>{feat}</span>
-                  </div>
-                ))}
+            {/* Key Features (Only rendered if filled) */}
+            {Boolean(product.features && product.features.length > 0 && product.features.some(f => f && f.trim().length > 0)) && (
+              <div>
+                <h3 className="font-bold text-white text-base font-mono mb-3 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-cyan-400" />
+                  <span>Key Features</span>
+                </h3>
+                <div className="space-y-2">
+                  {product.features.filter(f => f && f.trim().length > 0).map((feat, idx) => (
+                    <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-300 p-2 rounded-lg bg-slate-900/60 border border-white/5">
+                      <Check className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                      <span>{feat}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Included Files */}
-            <div>
-              <h3 className="font-bold text-white text-base font-mono mb-2 flex items-center gap-2">
-                <Package className="w-4 h-4 text-indigo-400" />
-                <span>Included Package Assets</span>
-              </h3>
-              <ul className="space-y-1 text-xs text-slate-300 list-disc list-inside">
-                {product.includedFiles.map((file, idx) => (
-                  <li key={idx} className="font-mono text-cyan-300/90">{file}</li>
-                ))}
-              </ul>
-            </div>
-
-            {/* System Requirements */}
-            <div>
-              <h3 className="font-bold text-white text-base font-mono mb-2 flex items-center gap-2">
-                <Cpu className="w-4 h-4 text-emerald-400" />
-                <span>System Requirements</span>
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {product.requirements.map((req, idx) => (
-                  <span key={idx} className="px-2.5 py-1 rounded-lg bg-slate-900 text-slate-300 text-xs font-mono border border-white/5">
-                    {req}
-                  </span>
-                ))}
+            {/* Included Files (Only rendered if filled) */}
+            {Boolean(product.includedFiles && product.includedFiles.length > 0 && product.includedFiles.some(f => f && f.trim().length > 0)) && (
+              <div>
+                <h3 className="font-bold text-white text-base font-mono mb-2 flex items-center gap-2">
+                  <Package className="w-4 h-4 text-indigo-400" />
+                  <span>Included Files</span>
+                </h3>
+                <ul className="space-y-1 text-xs text-slate-300 list-disc list-inside">
+                  {product.includedFiles.filter(f => f && f.trim().length > 0).map((file, idx) => (
+                    <li key={idx} className="font-mono text-cyan-300/90">{file}</li>
+                  ))}
+                </ul>
               </div>
-            </div>
+            )}
+
+            {/* System Requirements (Only rendered if filled) */}
+            {Boolean(product.requirements && product.requirements.length > 0 && product.requirements.some(r => r && r.trim().length > 0)) && (
+              <div>
+                <h3 className="font-bold text-white text-base font-mono mb-2 flex items-center gap-2">
+                  <Cpu className="w-4 h-4 text-emerald-400" />
+                  <span>System Requirements</span>
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {product.requirements.filter(r => r && r.trim().length > 0).map((req, idx) => (
+                    <span key={idx} className="px-2.5 py-1 rounded-lg bg-slate-900 text-slate-300 text-xs font-mono border border-white/5">
+                      {req}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right Column: Pricing & Purchase Selectors */}

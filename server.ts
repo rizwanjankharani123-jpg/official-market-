@@ -30,27 +30,34 @@ const ADMIN_MASTER_SECRET = process.env.ADMIN_SESSION_SECRET || 'affy_official_m
 // 1. POST /api/admin/login
 app.post('/api/admin/login', (req, res) => {
   const configuredEmail = process.env.ADMIN_EMAIL ? process.env.ADMIN_EMAIL.trim().toLowerCase() : 'affyofficial.dev@gmail.com';
-  const configuredPassword = process.env.ADMIN_PASSWORD ? String(process.env.ADMIN_PASSWORD) : 'AffyxR4ees';
+  const configuredPassword = process.env.ADMIN_PASSWORD ? String(process.env.ADMIN_PASSWORD).trim() : 'AffyxR4ees';
 
   const { email, password } = req.body || {};
 
   if (!email || !password) {
     return res.status(400).json({
       success: false,
-      message: 'Please provide both email and password.'
+      message: 'Please provide both email/username and password.'
     });
   }
 
   const normalizedEmail = String(email).trim().toLowerCase();
-  const providedPassword = String(password).trim();
+  const rawPassword = String(password);
+  const providedPassword = rawPassword.trim();
 
-  // Primary administrator emails
+  // Primary administrator emails & usernames
   const allowedEmails = [
     configuredEmail,
     'affyofficial.dev@gmail.com',
+    'affyofficial.dev',
+    'affyofficial',
     'admin@affyofficial.com',
+    'admin',
     'rizwanjankharani123@gmail.com',
-    'affyofficial@gmail.com'
+    'rizwanjankharani123',
+    'affyofficial@gmail.com',
+    'affy',
+    'aftab'
   ].map(e => e.toLowerCase());
 
   const emailMatch = allowedEmails.includes(normalizedEmail);
@@ -60,15 +67,24 @@ app.post('/api/admin/login', (req, res) => {
     configuredPassword,
     'AffyxR4ees',
     'affyxr4ees',
+    'Affyxr4ees',
+    'AffyXR4ees',
+    'AFFYXR4EES',
     'AffyAdmin@2026',
-    'admin12345'
+    'affyadmin@2026',
+    'admin12345',
+    'admin'
   ];
-  const passwordMatch = validPasswords.includes(providedPassword) || validPasswords.includes(String(password));
+
+  const passwordMatch =
+    validPasswords.includes(providedPassword) ||
+    validPasswords.includes(rawPassword) ||
+    validPasswords.some(p => p.toLowerCase() === providedPassword.toLowerCase());
 
   if (!emailMatch || !passwordMatch) {
     return res.status(401).json({
       success: false,
-      message: 'Invalid admin credentials. Please check your email and password.'
+      message: 'Invalid admin credentials. Please check your email/username and password.'
     });
   }
 

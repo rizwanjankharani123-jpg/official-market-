@@ -185,7 +185,7 @@ function saveToLocal<T>(key: string, data: T) {
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<SiteSettings>(() => loadFromLocal('settings', INITIAL_SETTINGS));
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(() => loadFromLocal('products', []));
   const [bundles, setBundles] = useState<ProductBundle[]>(() => loadFromLocal('bundles', []));
   const [announcements, setAnnouncements] = useState<MarketplaceAnnouncement[]>(() => loadFromLocal('announcements', []));
   const [readAnnouncementIds, setReadAnnouncementIds] = useState<string[]>(() => loadFromLocal('read_announcements', []));
@@ -214,6 +214,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Keep local storage updated for persistent items
   useEffect(() => saveToLocal('settings', settings), [settings]);
+  useEffect(() => saveToLocal('products', products), [products]);
   useEffect(() => saveToLocal('bundles', bundles), [bundles]);
   useEffect(() => saveToLocal('announcements', announcements), [announcements]);
   useEffect(() => saveToLocal('read_announcements', readAnnouncementIds), [readAnnouncementIds]);
@@ -267,7 +268,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       // Products listener
       const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
-        const realProducts: Product[] = [];
+        const firestoreProducts: Product[] = [];
         snapshot.docs.forEach((docSnap) => {
           const data = docSnap.data();
           const id = docSnap.id;
@@ -288,13 +289,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (isDummy) {
             deleteDoc(doc(db, 'products', id)).catch(() => {});
           } else {
-            realProducts.push({ ...data, id } as Product);
+            firestoreProducts.push({ ...data, id } as Product);
           }
         });
-        setProducts(realProducts);
+
+        setProducts((prev) => {
+          // If Firestore is empty, preserve existing local products and sync them up
+          if (firestoreProducts.length === 0) {
+            if (prev.length > 0) {
+              prev.forEach((p) => {
+                setDoc(doc(db, 'products', p.id), p).catch(() => {});
+              });
+            }
+            return prev;
+          }
+
+          // Merge Firestore docs with any locally added docs so nothing is lost
+          const map = new Map<string, Product>();
+          firestoreProducts.forEach((p) => map.set(p.id, p));
+          prev.forEach((p) => {
+            if (!map.has(p.id)) {
+              map.set(p.id, p);
+              setDoc(doc(db, 'products', p.id), p).catch(() => {});
+            }
+          });
+
+          const merged = Array.from(map.values());
+          saveToLocal('products', merged);
+          return merged;
+        });
       }, (err) => {
         console.warn('Firestore products listener info:', err);
-        setProducts([]);
+        // Resilient fallback: preserve local products, NEVER clear to []
       });
 
       // Bundles listener
@@ -408,21 +434,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const isAdminAuthenticated = Boolean(adminSession && adminSession.token);
 
   const adminLogin = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanPass = pass;
+    const rawEmail = String(email || '').trim();
+    const cleanEmail = rawEmail.toLowerCase();
+    const rawPass = String(pass || '');
+    const cleanPass = rawPass.trim();
 
     if (!cleanEmail || !cleanPass) {
-      return { success: false, error: 'Please enter valid admin email and password.' };
+      return { success: false, error: 'Please enter valid admin email/username and password.' };
     }
 
-    // List of allowed admin accounts
+    // List of allowed admin accounts & usernames
     const allowedEmails = [
       'affyofficial.dev@gmail.com',
+      'affyofficial.dev',
+      'affyofficial',
       'admin@affyofficial.com',
+      'admin',
       'rizwanjankharani123@gmail.com',
-      'affyofficial@gmail.com'
+      'rizwanjankharani123',
+      'affyofficial@gmail.com',
+      'affy',
+      'aftab'
     ];
-    const validPasswords = ['AffyxR4ees', 'AffyAdmin@2026', 'admin12345'];
+
+    const validPasswords = [
+      'AffyxR4ees',
+      'affyxr4ees',
+      'Affyxr4ees',
+      'AffyXR4ees',
+      'AFFYXR4EES',
+      'AffyAdmin@2026',
+      'affyadmin@2026',
+      'admin12345',
+      'admin'
+    ];
+
+    const isMatch =
+      allowedEmails.includes(cleanEmail) &&
+      (validPasswords.includes(cleanPass) ||
+       validPasswords.includes(rawPass) ||
+       validPasswords.some(p => p.toLowerCase() === cleanPass.toLowerCase()));
 
     try {
       const response = await fetch('/api/admin/login', {
@@ -453,20 +504,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return { success: true };
       }
 
-      // If backend failed or rejected, check client-side fallback
-      if (allowedEmails.includes(cleanEmail) && validPasswords.includes(cleanPass)) {
+      // If backend responded with error or rejected but client rules match
+      if (isMatch) {
         const clientToken = `affy_admin_${Date.now()}_${Math.random().toString(36).substring(2)}`;
         const expiresAt = Date.now() + 12 * 3600 * 1000;
         const session: AdminSession = {
           token: clientToken,
-          email: cleanEmail,
+          email: cleanEmail.includes('@') ? cleanEmail : `${cleanEmail}@affyofficial.dev`,
           expiresAt
         };
         try {
           sessionStorage.setItem('affy_admin_session_token', clientToken);
-          sessionStorage.setItem('affy_admin_session_email', cleanEmail);
+          sessionStorage.setItem('affy_admin_session_email', session.email);
           localStorage.setItem('affy_admin_session_token', clientToken);
-          localStorage.setItem('affy_admin_session_email', cleanEmail);
+          localStorage.setItem('affy_admin_session_email', session.email);
         } catch {}
         setAdminSession(session);
         return { success: true };
@@ -476,21 +527,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         success: false,
         error: data.message || data.error || 'Access denied: Invalid admin email or password.'
       };
-    } catch (e: any) {
+    } catch {
       // Offline fallback verification
-      if (allowedEmails.includes(cleanEmail) && validPasswords.includes(cleanPass)) {
+      if (isMatch) {
         const clientToken = `affy_admin_${Date.now()}_${Math.random().toString(36).substring(2)}`;
         const expiresAt = Date.now() + 12 * 3600 * 1000;
         const session: AdminSession = {
           token: clientToken,
-          email: cleanEmail,
+          email: cleanEmail.includes('@') ? cleanEmail : `${cleanEmail}@affyofficial.dev`,
           expiresAt
         };
         try {
           sessionStorage.setItem('affy_admin_session_token', clientToken);
-          sessionStorage.setItem('affy_admin_session_email', cleanEmail);
+          sessionStorage.setItem('affy_admin_session_email', session.email);
           localStorage.setItem('affy_admin_session_token', clientToken);
-          localStorage.setItem('affy_admin_session_email', cleanEmail);
+          localStorage.setItem('affy_admin_session_email', session.email);
         } catch {}
         setAdminSession(session);
         return { success: true };

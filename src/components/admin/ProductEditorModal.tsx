@@ -2,10 +2,6 @@ import React, { useState } from 'react';
 import { Product } from '../../types';
 import { uploadFileToFirebaseStorage } from '../../lib/firebase';
 import { getSafeProductImage, CATEGORY_FALLBACK_IMAGES } from '../../utils/imageFallbacks';
-
-type ProductCategory = 'Android App' | 'Desktop Software' | 'Web Platform' | 'Full Stack System' | 'API & Backend' | 'Utility Tool';
-type LicenseType = 'Standard Commercial' | 'Extended Multi-Client' | 'Single App License' | 'Personal Educational';
-type ProductStatus = 'published' | 'draft';
 import {
   X,
   Package,
@@ -27,8 +23,18 @@ import {
   ExternalLink,
   Cpu,
   Loader2,
-  Globe
+  Globe,
+  Link,
+  ChevronDown,
+  ChevronUp,
+  DownloadCloud
 } from 'lucide-react';
+
+type ProductCategory = 'Android App' | 'Desktop Software' | 'Web Platform' | 'Full Stack System' | 'API & Backend' | 'Utility Tool';
+type LicenseType = 'Standard Commercial' | 'Extended Multi-Client' | 'Single App License' | 'Personal Educational';
+type ProductStatus = 'published' | 'draft';
+type EditorMode = 'quick' | 'advanced';
+type TabType = 'general' | 'media' | 'pricing' | 'apk' | 'source' | 'features';
 
 interface ProductEditorModalProps {
   product: Partial<Product>;
@@ -37,54 +43,59 @@ interface ProductEditorModalProps {
   onSave: (productData: Partial<Product>) => Promise<void>;
 }
 
-type TabType = 'general' | 'media' | 'pricing' | 'apk' | 'source' | 'features';
-
 export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   product,
   isOpen,
   onClose,
   onSave
 }) => {
+  const [editorMode, setEditorMode] = useState<EditorMode>('quick');
+  const [activeTab, setActiveTab] = useState<TabType>('general');
+  const [showAdvancedInQuick, setShowAdvancedInQuick] = useState(false);
+  const [showWebsitePreviewInQuick, setShowWebsitePreviewInQuick] = useState(false);
+
   const [formData, setFormData] = useState<Partial<Product>>({
     name: '',
     category: 'Android App',
     shortDescription: '',
     fullDescription: '',
+    aboutSoftware: '',
     pricingType: product?.pricingType || (product?.price === 0 ? 'free' : 'paid'),
-    price: product?.pricingType === 'free' || product?.price === 0 ? 0 : (product?.price ?? 1500),
+    price: product?.pricingType === 'free' || product?.price === 0 ? 0 : (product?.price ?? 0),
     currency: 'PKR',
     version: 'v1.0.0',
-    features: ['Native Performance', 'Offline Database Support', 'Clean Architecture'],
-    requirements: ['Android 8.0+ / Modern Web Browser'],
-    includedFiles: ['Compiled APK / Executable', 'Documentation & Setup Guide'],
-    demoImages: [],
+    features: product?.features || [],
+    requirements: product?.requirements || [],
+    includedFiles: product?.includedFiles || [],
+    demoImages: product?.demoImages || [],
     apkUrl: '',
     apkSize: '',
+    apkBadge: 'Free APK',
+    isApkOnly: true,
     apkPreviewUrl: '',
     websitePreviewUrl: '',
     previewEnabled: true,
-    sourceAvailable: true,
-    sourcePrice: 1500,
+    sourceAvailable: false,
+    sourcePrice: 0,
     sourceZipUrl: '',
     sourceSize: '',
-    techStack: ['Kotlin', 'React', 'Node.js', 'PostgreSQL'],
+    techStack: product?.techStack || [],
     licenseType: 'Standard Commercial',
-    licenseTerms: 'Commercial deployment rights included for single or multi-client projects.',
+    licenseTerms: 'Commercial deployment rights included.',
     commercialUseAllowed: true,
     redistributionAllowed: false,
     resaleAllowed: false,
     modificationAllowed: true,
-    supportTerms: 'Direct developer bug fixing and technical setup guidance.',
+    supportTerms: 'Direct developer support included.',
     status: 'published',
     featured: product?.featured ?? false,
     ...product
   });
 
-  const [activeTab, setActiveTab] = useState<TabType>('general');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Real upload states
+  // Upload states
   const [coverUploading, setCoverUploading] = useState(false);
   const [coverUploadProgress, setCoverUploadProgress] = useState(0);
   const [apkUploading, setApkUploading] = useState(false);
@@ -96,7 +107,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   const [newFeature, setNewFeature] = useState('');
   const [newRequirement, setNewRequirement] = useState('');
   const [newTech, setNewTech] = useState('');
-  const [newImageUrl, setNewImageUrl] = useState('');
+  const [directImageUrlInput, setDirectImageUrlInput] = useState('');
 
   if (!isOpen) return null;
 
@@ -104,8 +115,8 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   const handleCoverFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 15 * 1024 * 1024) {
-      setErrorMessage('Cover image must be under 15MB');
+    if (file.size > 20 * 1024 * 1024) {
+      setErrorMessage('Cover image must be under 20MB');
       return;
     }
     setErrorMessage('');
@@ -119,12 +130,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
         (progress) => setCoverUploadProgress(progress)
       );
 
-      const updatedImages = [...(formData.demoImages || [])];
-      if (updatedImages.length > 0) {
-        updatedImages[0] = downloadUrl;
-      } else {
-        updatedImages.push(downloadUrl);
-      }
+      const updatedImages = [downloadUrl, ...(formData.demoImages || []).filter(img => img !== downloadUrl)];
       setFormData((prev) => ({ ...prev, demoImages: updatedImages }));
     } catch (err: any) {
       setErrorMessage('Image upload failed: ' + (err.message || 'Unknown error'));
@@ -133,24 +139,13 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
     }
   };
 
-  // Real gallery screenshots multi-file upload to Firebase Storage
-  const handleGalleryFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    setErrorMessage('');
-    for (const file of Array.from(files)) {
-      if (file.size > 15 * 1024 * 1024) continue;
-      try {
-        const { downloadUrl } = await uploadFileToFirebaseStorage(file, 'products/gallery');
-        setFormData((prev) => ({
-          ...prev,
-          demoImages: [...(prev.demoImages || []), downloadUrl]
-        }));
-      } catch (err) {
-        console.warn('Gallery item upload error:', err);
-      }
-    }
+  // Add image from direct link (IBB, Imgur, direct URL)
+  const handleAddDirectImageUrl = () => {
+    const url = directImageUrlInput.trim();
+    if (!url) return;
+    const updatedImages = [url, ...(formData.demoImages || []).filter(img => img !== url)];
+    setFormData((prev) => ({ ...prev, demoImages: updatedImages }));
+    setDirectImageUrlInput('');
   };
 
   // Real APK file upload handler with Firebase Storage
@@ -162,10 +157,12 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
     setApkUploading(true);
     setApkUploadProgress(0);
 
+    const fileSize = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
+
     try {
-      const { downloadUrl, fileSize } = await uploadFileToFirebaseStorage(
+      const { downloadUrl } = await uploadFileToFirebaseStorage(
         file,
-        'products/builds',
+        'products/apks',
         (progress) => setApkUploadProgress(progress)
       );
 
@@ -175,37 +172,9 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
         apkUrl: downloadUrl
       }));
     } catch (err: any) {
-      setErrorMessage('APK upload failed: ' + (err.message || 'Unknown error'));
+      setErrorMessage('APK file upload failed: ' + (err.message || 'Unknown error'));
     } finally {
       setApkUploading(false);
-    }
-  };
-
-  // Real Source Code ZIP upload handler with Firebase Storage
-  const handleSourceZipSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setErrorMessage('');
-    setSourceUploading(true);
-    setSourceUploadProgress(0);
-
-    try {
-      const { downloadUrl, fileSize } = await uploadFileToFirebaseStorage(
-        file,
-        'products/source',
-        (progress) => setSourceUploadProgress(progress)
-      );
-
-      setFormData((prev) => ({
-        ...prev,
-        sourceSize: fileSize,
-        sourceZipUrl: downloadUrl
-      }));
-    } catch (err: any) {
-      setErrorMessage('Source ZIP upload failed: ' + (err.message || 'Unknown error'));
-    } finally {
-      setSourceUploading(false);
     }
   };
 
@@ -225,61 +194,16 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
     });
   };
 
-  const handleAddRequirement = () => {
-    if (!newRequirement.trim()) return;
-    setFormData({
-      ...formData,
-      requirements: [...(formData.requirements || []), newRequirement.trim()]
-    });
-    setNewRequirement('');
-  };
-
-  const handleRemoveRequirement = (index: number) => {
-    setFormData({
-      ...formData,
-      requirements: (formData.requirements || []).filter((_, i) => i !== index)
-    });
-  };
-
-  const handleAddTech = () => {
-    if (!newTech.trim()) return;
-    setFormData({
-      ...formData,
-      techStack: [...(formData.techStack || []), newTech.trim()]
-    });
-    setNewTech('');
-  };
-
-  const handleRemoveTech = (index: number) => {
-    setFormData({
-      ...formData,
-      techStack: (formData.techStack || []).filter((_, i) => i !== index)
-    });
-  };
-
-  const handleRemoveImage = (index: number) => {
-    const updated = (formData.demoImages || []).filter((_, i) => i !== index);
-    setFormData({ ...formData, demoImages: updated });
-  };
-
-  const handleAddImageUrl = () => {
-    if (!newImageUrl.trim()) return;
-    setFormData({
-      ...formData,
-      demoImages: [...(formData.demoImages || []), newImageUrl.trim()]
-    });
-    setNewImageUrl('');
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name?.trim()) {
-      setErrorMessage('Product name is required.');
+      setErrorMessage('Product / App name is required.');
       return;
     }
+
     const isFree = formData.pricingType === 'free';
     if (!isFree && (formData.price === undefined || formData.price === null || formData.price < 0)) {
-      setErrorMessage('Valid software price in PKR is required.');
+      setErrorMessage('Valid price in PKR is required (or select Free).');
       return;
     }
 
@@ -289,17 +213,37 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
       const safeCover = getSafeProductImage(formData.demoImages, formData.category);
       const cleanedImages = (formData.demoImages || [])
         .filter((img) => img && typeof img === 'string' && img.trim() !== '' && img !== 'null' && img !== 'undefined');
-      
+
       const finalDemoImages = cleanedImages.length > 0 ? cleanedImages : [safeCover];
+
+      // Clean empty arrays so they don't render empty sections on the frontend
+      const cleanFeatures = (formData.features || []).filter(f => f && f.trim().length > 0);
+      const cleanReqs = (formData.requirements || []).filter(r => r && r.trim().length > 0);
+      const cleanFiles = (formData.includedFiles || []).filter(f => f && f.trim().length > 0);
+      const cleanTech = (formData.techStack || []).filter(t => t && t.trim().length > 0);
 
       const payload: Partial<Product> = {
         ...formData,
+        name: formData.name.trim(),
+        category: formData.category || 'Android App',
+        shortDescription: formData.shortDescription?.trim() || '',
+        fullDescription: formData.fullDescription?.trim() || '',
+        aboutSoftware: formData.aboutSoftware?.trim() || '',
         demoImages: finalDemoImages,
+        apkUrl: formData.apkUrl?.trim() || '',
+        apkSize: formData.apkSize?.trim() || '',
+        websitePreviewUrl: formData.websitePreviewUrl?.trim() || '',
+        features: cleanFeatures,
+        requirements: cleanReqs,
+        includedFiles: cleanFiles,
+        techStack: cleanTech,
         featured: Boolean(formData.featured),
         pricingType: isFree ? 'free' : 'paid',
         price: isFree ? 0 : Number(formData.price || 0),
-        currency: 'PKR'
+        currency: 'PKR',
+        isApkOnly: formData.category === 'Android App' && !formData.sourceAvailable
       };
+
       await onSave(payload);
       onClose();
     } catch (err: any) {
@@ -309,226 +253,91 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
     }
   };
 
-  const tabItems = [
-    { id: 'general', label: '1. General Info', icon: Package },
-    { id: 'media', label: '2. Media & Visuals', icon: ImageIcon },
-    { id: 'pricing', label: '3. Pricing & Terms', icon: DollarSign },
-    { id: 'apk', label: '4. Software APK', icon: Smartphone },
-    { id: 'source', label: '5. Source Package', icon: Code2 },
-    { id: 'features', label: '6. Features & Specs', icon: Layers }
-  ];
+  const isFree = formData.pricingType === 'free';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
-      <div className="relative w-full max-w-4xl bg-[#090d16] border border-cyan-500/40 rounded-3xl p-4 sm:p-8 shadow-2xl shadow-cyan-950/60 my-6 max-h-[95vh] flex flex-col text-left">
-        {/* Modal Top Header */}
-        <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/10 shrink-0">
+      <div className="relative w-full max-w-3xl bg-[#090d16] border border-cyan-500/40 rounded-3xl p-4 sm:p-7 shadow-2xl shadow-cyan-950/60 my-6 max-h-[95vh] flex flex-col text-left">
+        {/* Top Header */}
+        <div className="flex items-center justify-between pb-3.5 mb-3.5 border-b border-white/10 shrink-0">
           <div>
-            <span className="text-[10px] font-mono px-2.5 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-bold uppercase">
-              {formData.id ? 'Product Editor' : 'Create New Product Release'}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono px-2.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-bold uppercase">
+                {formData.id ? 'Edit Product' : 'Add New App / Software'}
+              </span>
+              <span className="text-xs text-slate-400 font-mono">
+                {editorMode === 'quick' ? '⚡ Quick Mode (Fast & Simple)' : '🎛️ Advanced Tab Mode'}
+              </span>
+            </div>
             <h2 className="text-lg sm:text-2xl font-black text-white font-mono mt-1">
-              {formData.name || 'Untitled Software Product'}
+              {formData.name || 'New Software / APK Release'}
             </h2>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Horizontal Navigation Sub-Tabs Bar */}
-        <div className="flex gap-1.5 overflow-x-auto pb-3 mb-4 border-b border-white/5 shrink-0">
-          {tabItems.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
+          <div className="flex items-center gap-2">
+            {/* Mode Switcher Toggle */}
+            <div className="flex bg-slate-900 p-0.5 rounded-xl border border-white/10 text-[11px] font-mono">
               <button
-                key={tab.id}
                 type="button"
-                onClick={() => setActiveTab(tab.id as TabType)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 whitespace-nowrap transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/20 font-extrabold'
-                    : 'bg-slate-900/80 text-slate-400 hover:text-white border border-white/5'
+                onClick={() => setEditorMode('quick')}
+                className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
+                  editorMode === 'quick' ? 'bg-cyan-500 text-black font-extrabold shadow-sm' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{tab.label}</span>
+                ⚡ Quick
               </button>
-            );
-          })}
+              <button
+                type="button"
+                onClick={() => setEditorMode('advanced')}
+                className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
+                  editorMode === 'advanced' ? 'bg-cyan-500 text-black font-extrabold shadow-sm' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Advanced
+              </button>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Error Alert */}
         {errorMessage && (
-          <div className="p-3 mb-4 rounded-xl bg-rose-950/40 border border-rose-500/30 text-rose-300 text-xs font-mono flex items-center gap-2 shrink-0">
+          <div className="p-3 mb-3 rounded-xl bg-rose-950/40 border border-rose-500/30 text-rose-300 text-xs font-mono flex items-center gap-2 shrink-0">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
 
-        {/* Scrollable Form Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pr-1 space-y-6 custom-scrollbar">
-          {/* TAB 1: GENERAL INFO */}
-          {activeTab === 'general' && (
-            <div className="space-y-4 animate-in fade-in">
-              {/* Quick Archetype Configuration Presets */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-950 via-[#070d1a] to-slate-950 border border-cyan-500/30 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono text-cyan-300 font-bold flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-cyan-400" />
-                    <span>Choose Product Distribution Archetype (1-Click Auto Setup)</span>
-                  </span>
-                  <span className="text-[10px] font-mono text-slate-400">Quick configuration presets</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                  {/* Preset 1: Paid Pro APK Only (e.g. CapCut Pro) */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData({
-                        ...formData,
-                        category: 'Android App',
-                        pricingType: 'paid',
-                        price: 1500,
-                        isApkOnly: true,
-                        apkBadge: 'Pro APK',
-                        sourceAvailable: false,
-                        sourcePrice: 0,
-                        previewEnabled: true,
-                        demoImages: formData.demoImages && formData.demoImages.length > 0 ? formData.demoImages : ['https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=1200&q=80']
-                      });
-                    }}
-                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                      formData.isApkOnly && formData.pricingType === 'paid'
-                        ? 'bg-amber-500/15 border-amber-400 text-white shadow-md shadow-amber-500/10'
-                        : 'bg-slate-900 text-slate-400 border-white/5 hover:border-white/20 hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 font-bold text-xs text-amber-300 font-mono">
-                      <Smartphone className="w-3.5 h-3.5" />
-                      <span>⭐ Paid APK Only (CapCut Pro)</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-1 leading-snug">
-                      Paid APK Download. Source code is NOT included/required.
-                    </p>
-                  </button>
-
-                  {/* Preset 2: 100% Free APK Only */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData({
-                        ...formData,
-                        category: 'Android App',
-                        pricingType: 'free',
-                        price: 0,
-                        isApkOnly: true,
-                        apkBadge: 'Free APK',
-                        sourceAvailable: false,
-                        sourcePrice: 0,
-                        previewEnabled: true,
-                        demoImages: formData.demoImages && formData.demoImages.length > 0 ? formData.demoImages : ['https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=1200&q=80']
-                      });
-                    }}
-                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                      formData.isApkOnly && formData.pricingType === 'free'
-                        ? 'bg-emerald-500/15 border-emerald-400 text-white shadow-md shadow-emerald-500/10'
-                        : 'bg-slate-900 text-slate-400 border-white/5 hover:border-white/20 hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 font-bold text-xs text-emerald-300 font-mono">
-                      <Smartphone className="w-3.5 h-3.5" />
-                      <span>🟢 Free APK Only (PKR 0)</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-1 leading-snug">
-                      100% Free direct APK download. No source code.
-                    </p>
-                  </button>
-
-                  {/* Preset 3: Both Paid APK + Source Code */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData({
-                        ...formData,
-                        category: 'Android App',
-                        pricingType: 'paid',
-                        price: 2500,
-                        isApkOnly: false,
-                        apkBadge: 'Official App',
-                        sourceAvailable: true,
-                        sourcePrice: 4500,
-                        previewEnabled: true,
-                        demoImages: formData.demoImages && formData.demoImages.length > 0 ? formData.demoImages : ['https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=1200&q=80']
-                      });
-                    }}
-                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                      !formData.isApkOnly && formData.sourceAvailable && formData.category === 'Android App'
-                        ? 'bg-purple-500/15 border-purple-400 text-white shadow-md shadow-purple-500/10'
-                        : 'bg-slate-900 text-slate-400 border-white/5 hover:border-white/20 hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 font-bold text-xs text-purple-300 font-mono">
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>💎 APK + Source Code</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-1 leading-snug">
-                      Both APK Install and Developer Source Code are available.
-                    </p>
-                  </button>
-
-                  {/* Preset 4: Web Project */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData({
-                        ...formData,
-                        category: 'Web Platform',
-                        pricingType: 'paid',
-                        price: 2500,
-                        isApkOnly: false,
-                        sourceAvailable: true,
-                        sourcePrice: 3500,
-                        previewEnabled: true,
-                        demoImages: formData.demoImages && formData.demoImages.length > 0 ? formData.demoImages : ['https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80']
-                      });
-                    }}
-                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                      formData.category === 'Web Platform'
-                        ? 'bg-cyan-500/15 border-cyan-400 text-white shadow-md shadow-cyan-500/10'
-                        : 'bg-slate-900 text-slate-400 border-white/5 hover:border-white/20 hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 font-bold text-xs text-cyan-300 font-mono">
-                      <Globe className="w-3.5 h-3.5" />
-                      <span>🌐 Web Platform</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-1 leading-snug">
-                      Live Web Demo + Web Source Code License.
-                    </p>
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-mono text-slate-300 mb-1">Product Title *</label>
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pr-1 space-y-5 custom-scrollbar">
+          {/* ======================================================== */}
+          {/* ⚡ QUICK & EASY MODE (Single-Page Streamlined Form)     */}
+          {/* ======================================================== */}
+          {editorMode === 'quick' && (
+            <div className="space-y-4 text-left">
+              {/* Row 1: App Name & Category */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                <div className="sm:col-span-8">
+                  <label className="block text-xs font-mono text-slate-300 mb-1">
+                    App / Software Name *
+                  </label>
                   <input
                     type="text"
                     required
                     value={formData.name || ''}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g. Retail POS Pro Ultimate"
+                    placeholder="e.g. CapCut Pro APK, Apex POS, WhatsApp Bot..."
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-bold focus:border-cyan-500 focus:outline-none"
                   />
                 </div>
 
-                <div>
+                <div className="sm:col-span-4">
                   <label className="block text-xs font-mono text-slate-300 mb-1">Category *</label>
                   <select
                     value={formData.category || 'Android App'}
@@ -536,960 +345,557 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none cursor-pointer"
                   >
                     <option value="Android App">Android App (APK)</option>
-                    <option value="Desktop Software">Desktop Software (Windows/macOS)</option>
-                    <option value="Web Platform">Web Platform / Full-Stack</option>
-                    <option value="Full Stack System">Full Stack SaaS System</option>
+                    <option value="Desktop Software">Desktop Software (PC/Mac)</option>
+                    <option value="Web Platform">Web Platform / Website</option>
+                    <option value="Utility Tool">Utility Tool / Automation</option>
+                    <option value="Full Stack System">Full-Stack SaaS</option>
                     <option value="API & Backend">API & Backend Engine</option>
-                    <option value="Utility Tool">Utility & Automation Tool</option>
                   </select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-mono text-slate-300 mb-1">Release Version</label>
-                  <input
-                    type="text"
-                    value={formData.version || 'v1.0.0'}
-                    onChange={(e) => setFormData({ ...formData, version: e.target.value })}
-                    placeholder="v1.0.0"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-mono text-slate-300 mb-1">Catalog Status</label>
-                  <select
-                    value={formData.status || 'published'}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as ProductStatus })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none cursor-pointer"
-                  >
-                    <option value="published">Published (Live in Store)</option>
-                    <option value="draft">Draft (Hidden)</option>
-                    <option value="archived">Archived</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-mono text-slate-300 mb-1">
-                    Featured: ⭐
+              {/* Row 2: Pricing (1-Click Easy Free / Paid Selector) */}
+              <div className="p-3.5 rounded-2xl bg-[#070b14] border border-cyan-500/25 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono text-cyan-300 font-bold flex items-center gap-1.5">
+                    <DollarSign className="w-4 h-4 text-cyan-400" />
+                    <span>Price & Distribution Type</span>
                   </label>
-                  <div className="flex bg-slate-900 p-1 rounded-xl border border-white/10">
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, featured: true })}
-                      className={`flex-1 py-1 px-3 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                        formData.featured
-                          ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <Sparkles className="w-3 h-3" />
-                      <span>ON</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, featured: false })}
-                      className={`flex-1 py-1 px-3 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                        !formData.featured
-                          ? 'bg-slate-800 text-slate-200 border border-white/10'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <span>OFF</span>
-                    </button>
+                  <span className="text-[10px] font-mono text-slate-400">Choose Free or Paid</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, pricingType: 'free', price: 0, apkBadge: 'Free APK' })}
+                    className={`py-2 px-3 rounded-xl border text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      isFree
+                        ? 'bg-emerald-500 text-black font-extrabold shadow-md shadow-emerald-500/20 border-emerald-400'
+                        : 'bg-slate-900 text-slate-400 border-white/5 hover:text-white'
+                    }`}
+                  >
+                    <span>🟢 100% FREE (PKR 0)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, pricingType: 'paid', price: formData.price && formData.price > 0 ? formData.price : 1500, apkBadge: 'Pro APK' })}
+                    className={`py-2 px-3 rounded-xl border text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      !isFree
+                        ? 'bg-cyan-500 text-black font-extrabold shadow-md shadow-cyan-500/20 border-cyan-400'
+                        : 'bg-slate-900 text-slate-400 border-white/5 hover:text-white'
+                    }`}
+                  >
+                    <span>🔵 PAID SOFTWARE (PKR)</span>
+                  </button>
+                </div>
+
+                {!isFree && (
+                  <div className="pt-2 flex items-center gap-2">
+                    <span className="text-xs font-mono text-slate-400">Price in PKR:</span>
+                    <input
+                      type="number"
+                      min={100}
+                      value={formData.price ?? 1500}
+                      onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                      placeholder="e.g. 1500"
+                      className="w-40 px-3 py-1.5 rounded-lg bg-slate-900 border border-white/10 text-white font-mono text-xs font-bold focus:border-cyan-500 focus:outline-none"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Row 3: Direct APK / Download Link (The Core Feature!) */}
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-[#080d1a] to-[#04060c] border border-cyan-500/40 space-y-3 shadow-lg shadow-cyan-950/30">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono text-cyan-300 font-bold flex items-center gap-2">
+                    <DownloadCloud className="w-4 h-4 text-cyan-400" />
+                    <span>Direct Download Link (APK / Drive / MediaFire)</span>
+                  </label>
+                  <span className="text-[10px] font-mono text-emerald-400 font-semibold">User Downloads From Here</span>
+                </div>
+
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Paste your direct download link below (Google Drive, MediaFire, Mega, Dropbox, or direct .apk URL). Or upload the APK directly.
+                </p>
+
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-400" />
+                    <input
+                      type="url"
+                      value={formData.apkUrl || ''}
+                      onChange={(e) => setFormData({ ...formData, apkUrl: e.target.value })}
+                      placeholder="https://drive.google.com/file/... or https://mediafire.com/..."
+                      className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                    {/* Direct File Upload Option */}
+                    <div className="flex items-center gap-2">
+                      <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white text-xs font-mono cursor-pointer transition-colors">
+                        <UploadCloud className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>{apkUploading ? `Uploading (${apkUploadProgress}%)...` : 'Or Upload APK File'}</span>
+                        <input
+                          type="file"
+                          accept=".apk,.zip,.rar,.exe,.tar.gz"
+                          onChange={handleApkFileSelect}
+                          className="hidden"
+                          disabled={apkUploading}
+                        />
+                      </label>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-mono text-slate-400">File Size (Optional):</span>
+                      <input
+                        type="text"
+                        value={formData.apkSize || ''}
+                        onChange={(e) => setFormData({ ...formData, apkSize: e.target.value })}
+                        placeholder="e.g. 24.5 MB"
+                        className="w-24 px-2 py-1 rounded bg-slate-900 border border-white/10 text-white text-[11px] font-mono focus:border-cyan-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {formData.apkUrl && (
+                    <div className="p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 text-[11px] font-mono flex items-center gap-2 truncate">
+                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">Download Link Set: {formData.apkUrl}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Row 4: App Picture / Thumbnail (Auto-adjusts for 16:9, 1:1, or 9:16) */}
+              <div className="p-4 rounded-2xl bg-[#070b14] border border-white/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono text-slate-200 font-bold flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-cyan-400" />
+                    <span>App Picture / Thumbnail (Auto-Fits All Sizes)</span>
+                  </label>
+                  <span className="text-[10px] font-mono text-cyan-300">Upload or Paste Link</span>
+                </div>
+
+                <p className="text-[11px] text-slate-400">
+                  Upload an image file OR paste an ImgBB / direct image link. Auto-adjusts for YouTube thumbnail (16:9), profile (1:1), or app screenshot!
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                  {/* Left: Input Options */}
+                  <div className="sm:col-span-8 space-y-2">
+                    {/* Option A: Upload File */}
+                    <div className="flex items-center gap-2">
+                      <label className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white text-xs font-mono cursor-pointer transition-colors">
+                        <UploadCloud className="w-4 h-4 text-cyan-400" />
+                        <span>{coverUploading ? `Uploading (${coverUploadProgress}%)...` : 'Upload Picture File'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleCoverFileUpload}
+                          className="hidden"
+                          disabled={coverUploading}
+                        />
+                      </label>
+                    </div>
+
+                    {/* Option B: Direct Link / IBB */}
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        value={directImageUrlInput}
+                        onChange={(e) => setDirectImageUrlInput(e.target.value)}
+                        placeholder="Or paste ImgBB / direct image link (https://...)"
+                        className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddDirectImageUrl}
+                        className="px-3 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 text-xs font-mono font-bold cursor-pointer transition-colors"
+                      >
+                        Set Link
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Right: Auto-Fitting Image Preview */}
+                  <div className="sm:col-span-4 flex justify-center">
+                    <div className="relative w-full h-24 sm:h-28 rounded-xl overflow-hidden bg-slate-950 border border-white/10 flex items-center justify-center">
+                      <img
+                        src={getSafeProductImage(formData.demoImages, formData.category)}
+                        alt="Preview"
+                        className="w-full h-full object-contain p-1"
+                      />
+                      <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/80 text-[9px] font-mono text-cyan-300">
+                        Auto-Fit
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
 
+              {/* Row 5: Short Tagline / Summary */}
               <div>
-                <label className="block text-xs font-mono text-slate-300 mb-1">Short Description (1-2 sentences) *</label>
+                <label className="block text-xs font-mono text-slate-300 mb-1">
+                  Short Tagline / Description *
+                </label>
                 <input
                   type="text"
                   required
                   value={formData.shortDescription || ''}
                   onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
-                  placeholder="Complete point-of-sale Android app with offline sync and bluetooth printing support."
+                  placeholder="e.g. Free video editor with 4K export and premium unlocked features."
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:border-cyan-500 focus:outline-none"
                 />
               </div>
 
+              {/* Row 6: Detailed "About This App" (Optional - won't show empty boxes if left blank) */}
               <div>
-                <label className="block text-xs font-mono text-slate-300 mb-1">Detailed Description & Architecture</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-mono text-slate-300">
+                    About This App / Details (Optional)
+                  </label>
+                  <span className="text-[10px] font-mono text-slate-500">Only shows on page if filled</span>
+                </div>
                 <textarea
-                  rows={4}
+                  rows={3}
                   value={formData.fullDescription || ''}
                   onChange={(e) => setFormData({ ...formData, fullDescription: e.target.value })}
-                  placeholder="Comprehensive technical breakdown, database schema details, architecture highlights, and setup guide..."
+                  placeholder="App highlights, how to install, or instructions. (If you leave this empty, no empty box will show to users)."
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:border-cyan-500 focus:outline-none leading-relaxed"
                 />
               </div>
 
-              {/* Structured Points: About This Software */}
-              <div className="p-4 rounded-2xl bg-[#070b14] border border-cyan-500/20 space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-mono text-cyan-300 font-bold flex items-center gap-1.5">
-                    <Smartphone className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>About This Software (Structured Points)</span>
-                  </label>
-                  <span className="text-[10px] font-mono text-slate-400">One point per line (1. ... or • ...)</span>
-                </div>
-                <p className="text-[11px] text-slate-400">
-                  Write the important details about this software. Use one point per line. Supports numbered ("1. ...") or bulleted ("• ...") formatting.
-                </p>
-                <textarea
-                  rows={4}
-                  value={formData.aboutSoftware || ''}
-                  onChange={(e) => setFormData({ ...formData, aboutSoftware: e.target.value })}
-                  placeholder={'1. Modern and professional interface\n2. Fast and lightweight performance\n3. Easy installation and setup\n4. User-friendly experience\n5. Production-ready functionality'}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none leading-relaxed"
-                />
-              </div>
+              {/* Row 7: Website Live Preview URL (Optional - only for websites) */}
+              <div className="border-t border-white/5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowWebsitePreviewInQuick(!showWebsitePreviewInQuick)}
+                  className="text-xs font-mono text-slate-400 hover:text-cyan-400 flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <Globe className="w-3.5 h-3.5" />
+                  <span>
+                    {showWebsitePreviewInQuick ? 'Hide Website Preview Link' : 'Website Live Preview Link (Websites Only - Click to Add)'}
+                  </span>
+                  {showWebsitePreviewInQuick ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
 
-              {/* Structured Points: About This Source Code */}
-              <div className="p-4 rounded-2xl bg-[#070b14] border border-indigo-500/20 space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-mono text-indigo-300 font-bold flex items-center gap-1.5">
-                    <Code2 className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>About This Source Code (Structured Points)</span>
-                  </label>
-                  <span className="text-[10px] font-mono text-slate-400">One point per line (1. ... or • ...)</span>
-                </div>
-                <p className="text-[11px] text-slate-400">
-                  Write what is included in the source code, technologies, customization rights, and other important information.
-                </p>
-                <textarea
-                  rows={4}
-                  value={formData.aboutSource || ''}
-                  onChange={(e) => setFormData({ ...formData, aboutSource: e.target.value })}
-                  placeholder={'1. Complete source code included\n2. Clean and organized project structure\n3. Easy to customize\n4. Included project files and schemas\n5. Standard commercial license included'}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-indigo-500 focus:outline-none leading-relaxed"
-                />
-              </div>
-
-              {/* Optional Preview / Demo Links (Phase 9) */}
-              <div className="p-4 rounded-2xl bg-[#070b14] border border-cyan-500/20 space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-mono text-cyan-300 font-bold flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Live Preview & Demo Links (Optional)</span>
-                  </label>
-                  <label className="flex items-center gap-1.5 text-xs font-mono text-slate-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.previewEnabled ?? true}
-                      onChange={(e) => setFormData({ ...formData, previewEnabled: e.target.checked })}
-                      className="rounded text-cyan-500"
-                    />
-                    <span>Show Previews</span>
-                  </label>
-                </div>
-                <p className="text-[11px] text-slate-400">
-                  Optional public demo links for buyers to inspect the product live. If empty, the demo button is hidden.
-                </p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-mono text-slate-400 mb-1">
-                      Website / Web App Preview URL
-                    </label>
+                {showWebsitePreviewInQuick && (
+                  <div className="mt-2 p-3 rounded-xl bg-slate-900/80 border border-white/10 space-y-1">
+                    <label className="block text-[11px] font-mono text-slate-300">Live Website URL</label>
                     <input
                       type="url"
                       value={formData.websitePreviewUrl || ''}
                       onChange={(e) => setFormData({ ...formData, websitePreviewUrl: e.target.value })}
-                      placeholder="https://preview.example.com"
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
+                      placeholder="https://example.com"
+                      className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
                     />
+                    <p className="text-[10px] text-slate-500">Leave blank for APKs. Only fill if this is a live website.</p>
                   </div>
-
-                  <div>
-                    <label className="block text-[11px] font-mono text-slate-400 mb-1">
-                      APK / Video / Demo Link
-                    </label>
-                    <input
-                      type="url"
-                      value={formData.apkPreviewUrl || ''}
-                      onChange={(e) => setFormData({ ...formData, apkPreviewUrl: e.target.value })}
-                      placeholder="https://youtube.com/watch?v=... or direct demo"
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 2: MEDIA & VISUALS */}
-          {activeTab === 'media' && (
-            <div className="space-y-6 animate-in fade-in">
-              {/* Primary Cover Image */}
-              <div className="p-5 rounded-2xl bg-slate-900/80 border border-white/10 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-sm font-bold text-white font-mono flex items-center gap-2">
-                      <ImageIcon className="w-4 h-4 text-cyan-400" />
-                      <span>Product Cover / App Image (Auto-Adjusted)</span>
-                    </h3>
-                    <p className="text-[11px] text-slate-400">
-                      Supports <strong>YouTube 16:9 Thumbnails</strong>, <strong>Profile / Square 1:1 Icons</strong>, and ImgBB links.
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <label className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:brightness-110 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-cyan-500/20 shrink-0 btn-shimmer active:scale-95">
-                      <UploadCloud className="w-4 h-4 text-black" />
-                      <span>Direct Image Upload</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleCoverFileUpload}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                </div>
-
-                {/* Direct ImgBB or Image Link Input */}
-                <div className="p-3.5 rounded-2xl bg-slate-950 border border-cyan-500/30 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-xs font-mono text-cyan-300 font-bold">
-                      ImgBB Link or Direct Image URL:
-                    </label>
-                    <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-500/20 font-semibold">
-                      i.ibb.co / Direct Link Supported
-                    </span>
-                  </div>
-                  <input
-                    type="text"
-                    value={formData.demoImages?.[0] || ''}
-                    onChange={(e) => {
-                      let val = e.target.value.trim();
-                      const updated = [...(formData.demoImages || [])];
-                      if (updated.length > 0) updated[0] = val;
-                      else updated.push(val);
-                      setFormData({ ...formData, demoImages: updated });
-                    }}
-                    placeholder="https://i.ibb.co/xyz/image.png or https://images.unsplash.com/..."
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-400 focus:outline-none"
-                  />
-                  <p className="text-[10px] text-slate-400">
-                    💡 Tip: If using <strong>ImgBB</strong>, paste the direct image link (e.g. <code className="text-cyan-300">https://i.ibb.co/abcd123/photo.png</code>).
-                  </p>
-                </div>
-
-                {/* Dual-Layer Auto-Adjusted Preview Box */}
-                <div className="space-y-1.5">
-                  <p className="text-[11px] font-mono text-slate-400 uppercase">Live Auto-Adjusted Preview (YouTube 16:9 & Square Compatible):</p>
-                  <div className="relative aspect-[16/9] max-w-lg mx-auto rounded-2xl overflow-hidden bg-slate-950 border border-cyan-500/40 shadow-xl flex items-center justify-center">
-                    {formData.demoImages && formData.demoImages[0] ? (
-                      <>
-                        {/* Ambient Blurred Background Layer (Fills any letterbox seamlessly) */}
-                        <img
-                          src={formData.demoImages[0]}
-                          alt="Ambient Background"
-                          className="absolute inset-0 w-full h-full object-cover blur-xl opacity-35 scale-110"
-                        />
-                        {/* Crisp Foreground Auto-Fitted Image */}
-                        <img
-                          src={formData.demoImages[0]}
-                          alt="Product Cover Preview"
-                          className="relative z-10 w-full h-full object-contain p-1"
-                        />
-                      </>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-full text-slate-500 text-xs font-mono space-y-2">
-                        <ImageIcon className="w-8 h-8 text-slate-600" />
-                        <span>No image uploaded yet</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* One-Click Presets */}
-                <div className="space-y-1.5 pt-2 border-t border-white/5">
-                  <p className="text-[11px] font-mono text-cyan-400 font-bold flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Quick HD Stock Image Presets (Click to apply):</span>
-                  </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {[
-                      { label: '📱 Android App Mockup', url: 'https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=1200&q=80' },
-                      { label: '🌐 Web Platform / SaaS', url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80' },
-                      { label: '💻 Source Code / Tech', url: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=1200&q=80' },
-                      { label: '📊 Dashboard & Backend', url: 'https://images.unsplash.com/photo-1504639725590-34d0984388bd?auto=format&fit=crop&w=1200&q=80' },
-                      { label: '⚡ API Engine & Cloud', url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80' },
-                      { label: '🛒 POS & E-Commerce', url: 'https://images.unsplash.com/photo-1556742049-0a67c5574f73?auto=format&fit=crop&w=1200&q=80' },
-                    ].map((preset) => (
-                      <button
-                        key={preset.label}
-                        type="button"
-                        onClick={() => {
-                          const updated = [...(formData.demoImages || [])];
-                          if (updated.length > 0) updated[0] = preset.url;
-                          else updated.push(preset.url);
-                          setFormData({ ...formData, demoImages: updated });
-                        }}
-                        className="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 hover:border-cyan-500/30 text-[11px] font-mono text-left transition-all cursor-pointer truncate"
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Gallery Screenshots */}
-              <div className="p-5 rounded-2xl bg-slate-900/80 border border-white/10 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <h3 className="text-sm font-bold text-white font-mono flex items-center gap-2">
-                      <Layers className="w-4 h-4 text-indigo-400" />
-                      <span>Gallery & In-App Screenshots ({(formData.demoImages?.length || 1) - 1} Additional)</span>
-                    </h3>
-                    <p className="text-[11px] text-slate-400">
-                      Showcase application screens, dashboards, checkout flows, and backend panels.
-                    </p>
-                  </div>
-
-                  <label className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-xs flex items-center gap-1.5 border border-white/10 transition-colors cursor-pointer shrink-0">
-                    <Plus className="w-4 h-4 text-cyan-400" />
-                    <span>Add Screenshots</span>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={handleGalleryFileUpload}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-
-                {/* Screenshots Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {formData.demoImages?.slice(1).map((imgUrl, idx) => (
-                    <div
-                      key={idx}
-                      className="relative group aspect-[16/10] rounded-xl overflow-hidden bg-slate-950 border border-white/10"
-                    >
-                      <img src={imgUrl} alt={`Screenshot ${idx + 1}`} className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage(idx + 1)}
-                        className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-rose-500/80 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600"
-                        title="Delete Screenshot"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Add image URL manually */}
-                <div className="flex gap-2 pt-2">
-                  <input
-                    type="text"
-                    value={newImageUrl}
-                    onChange={(e) => setNewImageUrl(e.target.value)}
-                    placeholder="Or paste screenshot image URL..."
-                    className="flex-1 px-3.5 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddImageUrl}
-                    className="px-4 py-2 rounded-xl bg-slate-800 text-cyan-400 text-xs font-mono font-bold hover:bg-slate-700 cursor-pointer"
-                  >
-                    Add URL
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: PRICING & TERMS */}
-          {activeTab === 'pricing' && (
-            <div className="space-y-5 animate-in fade-in">
-              {/* Pricing Model Selector: Paid vs Free */}
-              <div className="p-4 rounded-2xl bg-[#070b14] border border-cyan-500/30 space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-mono text-cyan-300 font-bold flex items-center gap-1.5">
-                    <DollarSign className="w-4 h-4 text-cyan-400" />
-                    <span>Pricing Type / Marketplace Access *</span>
-                  </label>
-                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold uppercase ${
-                    formData.pricingType === 'free'
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                      : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
-                  }`}>
-                    {formData.pricingType === 'free' ? '100% Free Software' : 'Paid Commercial Release'}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, pricingType: 'paid', price: formData.price && formData.price > 0 ? formData.price : 1500 })}
-                    className={`py-3 px-4 rounded-xl border text-xs font-mono font-bold flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                      (formData.pricingType ?? 'paid') === 'paid'
-                        ? 'bg-cyan-500 text-black border-cyan-400 shadow-md shadow-cyan-500/25 font-extrabold'
-                        : 'bg-slate-900 text-slate-400 border-white/10 hover:text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    <DollarSign className="w-4 h-4" />
-                    <span>Paid (PKR Pricing)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, pricingType: 'free', price: 0 })}
-                    className={`py-3 px-4 rounded-xl border text-xs font-mono font-bold flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                      formData.pricingType === 'free'
-                        ? 'bg-emerald-500 text-black border-emerald-400 shadow-md shadow-emerald-500/25 font-extrabold'
-                        : 'bg-slate-900 text-slate-400 border-white/10 hover:text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    <span>Free Software (PKR 0)</span>
-                  </button>
-                </div>
-
-                {formData.pricingType === 'free' ? (
-                  <p className="text-[11px] text-emerald-400/95 font-mono bg-emerald-950/30 p-2.5 rounded-xl border border-emerald-500/20">
-                    🆓 <strong>Free Software Mode Active:</strong> Software binary / APK price is set to PKR 0. Users can download directly without payment proof or admin verification.
-                  </p>
-                ) : (
-                  <p className="text-[11px] text-cyan-400/90 font-mono bg-cyan-950/30 p-2.5 rounded-xl border border-cyan-500/20">
-                    💳 <strong>Paid Release Mode:</strong> Requires PKR payment via bank / wallet, proof submission, and manual admin verification before unlocking downloads.
-                  </p>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className={`p-4 rounded-2xl border space-y-2 transition-all ${
-                  formData.pricingType === 'free'
-                    ? 'bg-emerald-950/20 border-emerald-500/30'
-                    : 'bg-slate-900 border-white/10'
-                }`}>
-                  <label className={`block text-xs font-mono font-bold ${
-                    formData.pricingType === 'free' ? 'text-emerald-300' : 'text-cyan-300'
-                  }`}>
-                    Software / Binary Price (PKR) {formData.pricingType === 'free' ? '(FREE)' : '*'}
-                  </label>
-                  <p className="text-[10px] text-slate-400">
-                    {formData.pricingType === 'free'
-                      ? 'Free products are PKR 0. No payment required.'
-                      : 'Price in PKR for compiled binary / APK ready to install.'}
-                  </p>
-                  <input
-                    type="number"
-                    disabled={formData.pricingType === 'free'}
-                    required={formData.pricingType !== 'free'}
-                    value={formData.pricingType === 'free' ? 0 : (formData.price ?? 0)}
-                    onChange={(e) => setFormData({ ...formData, price: Number(e.target.value), currency: 'PKR' })}
-                    className={`w-full px-3.5 py-2.5 rounded-xl border text-base font-black font-mono focus:outline-none ${
-                      formData.pricingType === 'free'
-                        ? 'bg-slate-950/70 border-emerald-500/30 text-emerald-400 cursor-not-allowed opacity-90'
-                        : 'bg-slate-950 border-white/10 text-white focus:border-cyan-500'
-                    }`}
-                  />
-                </div>
+              {/* Collapsible: Optional Additional Options (Features, Version, Status) */}
+              <div className="border-t border-white/5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedInQuick(!showAdvancedInQuick)}
+                  className="text-xs font-mono text-slate-400 hover:text-cyan-400 flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>{showAdvancedInQuick ? 'Hide Extra Options' : '➕ More Options: Version, Features, Featured ⭐'}</span>
+                  {showAdvancedInQuick ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
 
-                <div className="p-4 rounded-2xl bg-slate-900 border border-white/10 space-y-2">
-                  <label className="block text-xs font-mono text-indigo-300 font-bold">
-                    Full Source Code Price (PKR)
-                  </label>
-                  <p className="text-[10px] text-slate-400">Optional developer source license price in PKR.</p>
-                  <input
-                    type="number"
-                    value={formData.sourcePrice ?? 0}
-                    onChange={(e) => setFormData({ ...formData, sourcePrice: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-white text-base font-black font-mono focus:border-cyan-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-mono text-slate-300 mb-1">License Classification</label>
-                  <select
-                    value={formData.licenseType || 'Standard Commercial'}
-                    onChange={(e) => setFormData({ ...formData, licenseType: e.target.value as LicenseType })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
-                  >
-                    <option value="Single App License">Single App License</option>
-                    <option value="Standard Commercial">Standard Commercial</option>
-                    <option value="Extended Commercial">Extended Commercial</option>
-                    <option value="Full Source Rights">Full Source Rights</option>
-                    <option value="Enterprise Exclusive">Enterprise Exclusive</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-mono text-slate-300 mb-1">Support & Maintenance Terms</label>
-                  <input
-                    type="text"
-                    value={formData.supportTerms || ''}
-                    onChange={(e) => setFormData({ ...formData, supportTerms: e.target.value })}
-                    placeholder="30 days direct developer support included."
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:border-cyan-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-mono text-slate-300 mb-1">Commercial License Terms</label>
-                <textarea
-                  rows={3}
-                  value={formData.licenseTerms || ''}
-                  onChange={(e) => setFormData({ ...formData, licenseTerms: e.target.value })}
-                  placeholder="Official license terms printed on customer certificates..."
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:border-cyan-500 focus:outline-none leading-relaxed"
-                />
-              </div>
-
-              <div className="p-4 rounded-2xl bg-slate-900/60 border border-white/5 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <label className="flex items-center gap-2 text-xs font-mono text-slate-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.commercialUseAllowed ?? true}
-                    onChange={(e) => setFormData({ ...formData, commercialUseAllowed: e.target.checked })}
-                    className="rounded text-cyan-500"
-                  />
-                  Commercial Use
-                </label>
-
-                <label className="flex items-center gap-2 text-xs font-mono text-slate-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.modificationAllowed ?? true}
-                    onChange={(e) => setFormData({ ...formData, modificationAllowed: e.target.checked })}
-                    className="rounded text-cyan-500"
-                  />
-                  Modification
-                </label>
-
-                <label className="flex items-center gap-2 text-xs font-mono text-slate-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.redistributionAllowed ?? false}
-                    onChange={(e) => setFormData({ ...formData, redistributionAllowed: e.target.checked })}
-                    className="rounded text-cyan-500"
-                  />
-                  Redistribution
-                </label>
-
-                <label className="flex items-center gap-2 text-xs font-mono text-slate-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.resaleAllowed ?? false}
-                    onChange={(e) => setFormData({ ...formData, resaleAllowed: e.target.checked })}
-                    className="rounded text-cyan-500"
-                  />
-                  Resale Rights
-                </label>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: SOFTWARE & APK BUILD */}
-          {activeTab === 'apk' && (
-            <div className="space-y-5 animate-in fade-in">
-              {/* Standalone APK Only Option Banner */}
-              <div className="p-4 rounded-2xl bg-[#070b14] border border-cyan-500/30 space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-mono text-cyan-300 font-bold flex items-center gap-2">
-                    <Smartphone className="w-4 h-4 text-cyan-400" />
-                    <span>Android APK Distribution Mode</span>
-                  </label>
-                  <label className="flex items-center gap-2 text-xs font-mono text-slate-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.isApkOnly ?? false}
-                      onChange={(e) => {
-                        const isOnly = e.target.checked;
-                        setFormData({
-                          ...formData,
-                          isApkOnly: isOnly,
-                          sourceAvailable: isOnly ? false : formData.sourceAvailable
-                        });
-                      }}
-                      className="rounded text-cyan-500"
-                    />
-                    <span className="font-bold text-cyan-400">Standalone APK Only (No Source Code)</span>
-                  </label>
-                </div>
-                <p className="text-[11px] text-slate-400">
-                  Enable this if this product is purely an Android APK (Free or Paid, e.g. CapCut Pro, Mod APK, Utility App) where no source code is needed.
-                </p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                  <div>
-                    <label className="block text-[11px] font-mono text-slate-400 mb-1">APK Badge Style</label>
-                    <select
-                      value={formData.apkBadge || (formData.pricingType === 'free' ? 'Free APK' : 'Pro APK')}
-                      onChange={(e) => setFormData({ ...formData, apkBadge: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none cursor-pointer"
-                    >
-                      <option value="Pro APK">⭐ Pro APK</option>
-                      <option value="Mod APK">🔥 Mod APK</option>
-                      <option value="Premium APK">💎 Premium APK</option>
-                      <option value="Free APK">🟢 Free APK</option>
-                      <option value="Official APK">🛡️ Official APK</option>
-                      <option value="Utility APK">⚡ Utility APK</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-mono text-slate-400 mb-1">Android Package Name (Optional)</label>
-                    <input
-                      type="text"
-                      value={formData.packageName || ''}
-                      onChange={(e) => setFormData({ ...formData, packageName: e.target.value })}
-                      placeholder="e.g. com.affy.capcutpro"
-                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-mono text-slate-400 mb-1">Min Android OS Version</label>
-                    <input
-                      type="text"
-                      value={formData.minAndroidVersion || 'Android 8.0+'}
-                      onChange={(e) => setFormData({ ...formData, minAndroidVersion: e.target.value })}
-                      placeholder="e.g. Android 8.0+"
-                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-slate-900/80 border border-white/10 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-sm font-bold text-white font-mono flex items-center gap-2">
-                      <Smartphone className="w-4 h-4 text-emerald-400" />
-                      <span>Software Binary / APK Package File</span>
-                    </h3>
-                    <p className="text-[11px] text-slate-400">
-                      Upload APK or executable package file for buyer instant delivery.
-                    </p>
-                  </div>
-
-                  <label className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer shadow-md shadow-emerald-500/20 shrink-0">
-                    <UploadCloud className="w-4 h-4 text-black" />
-                    <span>Select APK File (.apk)</span>
-                    <input
-                      type="file"
-                      accept=".apk,.exe,.zip,.dmg"
-                      onChange={handleApkFileSelect}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-
-                {/* Upload Progress Bar if active */}
-                {apkUploading && (
-                  <div className="p-3 rounded-xl bg-slate-950 border border-emerald-500/30 space-y-1.5">
-                    <div className="flex justify-between text-xs font-mono text-emerald-400">
-                      <span>Uploading APK Package...</span>
-                      <span>{apkUploadProgress}%</span>
-                    </div>
-                    <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-                      <div
-                        className="h-full bg-emerald-400 transition-all duration-300"
-                        style={{ width: `${apkUploadProgress}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-mono text-slate-300 mb-1">Direct Download URL / Cloud Key</label>
-                    <input
-                      type="text"
-                      value={formData.apkUrl || ''}
-                      onChange={(e) => setFormData({ ...formData, apkUrl: e.target.value })}
-                      placeholder="https://storage.affyofficial.com/builds/app.apk"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-mono text-slate-300 mb-1">Calculated Package Size</label>
-                    <input
-                      type="text"
-                      value={formData.apkSize || '24.5 MB'}
-                      onChange={(e) => setFormData({ ...formData, apkSize: e.target.value })}
-                      placeholder="e.g. 24.5 MB"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 5: SOURCE CODE PACKAGE */}
-          {activeTab === 'source' && (
-            <div className="space-y-5 animate-in fade-in">
-              {/* Master Source Code Enable/Disable Switch */}
-              <div className="p-4 rounded-2xl bg-slate-900 border border-white/10 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold text-white flex items-center gap-2">
-                    <Code2 className="w-4 h-4 text-indigo-400" />
-                    <span>Include Full Source Code License in this Release</span>
-                  </span>
-                  <div className="flex bg-slate-950 p-1 rounded-xl border border-white/10">
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, sourceAvailable: true, isApkOnly: false })}
-                      className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
-                        formData.sourceAvailable
-                          ? 'bg-indigo-600 text-white shadow-md'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      ON (Source Available)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, sourceAvailable: false, sourcePrice: 0 })}
-                      className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
-                        !formData.sourceAvailable
-                          ? 'bg-amber-500 text-black shadow-md font-extrabold'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      OFF (Only APK / Binary)
-                    </button>
-                  </div>
-                </div>
-
-                {!formData.sourceAvailable && (
-                  <p className="text-[11px] text-amber-300 font-mono bg-amber-950/30 p-2.5 rounded-xl border border-amber-500/20">
-                    ℹ️ <strong>Source Code Disabled:</strong> This product is configured as <strong>APK / Binary Only</strong> (e.g. CapCut Pro, Free Mod, Utility Tool). Buyers will only have the option to download/buy the APK.
-                  </p>
-                )}
-              </div>
-
-              {formData.sourceAvailable && (
-                <div className="p-5 rounded-2xl bg-slate-900/80 border border-white/10 space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <h3 className="text-sm font-bold text-white font-mono flex items-center gap-2">
-                        <FolderArchive className="w-4 h-4 text-indigo-400" />
-                        <span>Complete Source Code Archive (.ZIP)</span>
-                      </h3>
-                      <p className="text-[11px] text-slate-400">
-                        Upload complete repository ZIP or configure private storage link.
-                      </p>
-                    </div>
-
-                    <label className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer shadow-md shadow-indigo-600/20 shrink-0">
-                      <UploadCloud className="w-4 h-4 text-white" />
-                      <span>Select Source ZIP (.zip)</span>
-                      <input
-                        type="file"
-                        accept=".zip,.tar.gz,.rar"
-                        onChange={handleSourceZipSelect}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-
-                  {/* Upload Progress Bar if active */}
-                  {sourceUploading && (
-                    <div className="p-3 rounded-xl bg-slate-950 border border-indigo-500/30 space-y-1.5">
-                      <div className="flex justify-between text-xs font-mono text-indigo-400">
-                        <span>Uploading Source Code Archive...</span>
-                        <span>{sourceUploadProgress}%</span>
-                      </div>
-                      <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-                        <div
-                          className="h-full bg-indigo-500 transition-all duration-300"
-                          style={{ width: `${sourceUploadProgress}%` }}
+                {showAdvancedInQuick && (
+                  <div className="mt-3 p-4 rounded-2xl bg-slate-900/60 border border-white/10 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs font-mono text-slate-300 mb-1">Version</label>
+                        <input
+                          type="text"
+                          value={formData.version || 'v1.0.0'}
+                          onChange={(e) => setFormData({ ...formData, version: e.target.value })}
+                          placeholder="v1.0.0"
+                          className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
                         />
                       </div>
-                    </div>
-                  )}
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-mono text-slate-300 mb-1">Source ZIP Download URL</label>
-                      <input
-                        type="text"
-                        value={formData.sourceZipUrl || ''}
-                        onChange={(e) => setFormData({ ...formData, sourceZipUrl: e.target.value })}
-                        placeholder="https://storage.affyofficial.com/source/project.zip"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-mono text-slate-300 mb-1">Source Code Archive Size</label>
-                      <input
-                        type="text"
-                        value={formData.sourceSize || '15.2 MB'}
-                        onChange={(e) => setFormData({ ...formData, sourceSize: e.target.value })}
-                        placeholder="e.g. 15.2 MB"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Tech Stack Tags Manager */}
-                  <div className="space-y-2 pt-2 border-t border-white/5">
-                    <label className="block text-xs font-mono text-slate-300">
-                      Technology Stack & Architecture Frameworks
-                    </label>
-                    <div className="flex flex-wrap gap-1.5 mb-2">
-                      {formData.techStack?.map((tech, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2.5 py-1 rounded-lg bg-slate-950 text-indigo-300 border border-indigo-500/30 text-xs font-mono flex items-center gap-1.5"
+                      <div>
+                        <label className="block text-xs font-mono text-slate-300 mb-1">Status</label>
+                        <select
+                          value={formData.status || 'published'}
+                          onChange={(e) => setFormData({ ...formData, status: e.target.value as ProductStatus })}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none cursor-pointer"
                         >
-                          <span>{tech}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveTech(idx)}
-                            className="hover:text-rose-400"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </span>
-                      ))}
+                          <option value="published">Published (Live)</option>
+                          <option value="draft">Draft (Hidden)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-mono text-slate-300 mb-1">Featured: ⭐</label>
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, featured: !formData.featured })}
+                          className={`w-full py-2 px-3 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer ${
+                            formData.featured ? 'bg-amber-500 text-black border-amber-400' : 'bg-slate-950 text-slate-400 border-white/10'
+                          }`}
+                        >
+                          {formData.featured ? '⭐ Featured: ON' : 'Featured: OFF'}
+                        </button>
+                      </div>
                     </div>
 
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newTech}
-                        onChange={(e) => setNewTech(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddTech();
-                          }
-                        }}
-                        placeholder="Add technology (e.g. Kotlin, Compose, Firebase)..."
-                        className="flex-1 px-3.5 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-indigo-500 focus:outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddTech}
-                        className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-mono font-bold hover:bg-indigo-500 cursor-pointer"
-                      >
-                        Add Tech
-                      </button>
+                    {/* Features list */}
+                    <div>
+                      <label className="block text-xs font-mono text-slate-300 mb-1">Features (Optional)</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newFeature}
+                          onChange={(e) => setNewFeature(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddFeature();
+                            }
+                          }}
+                          placeholder="Type feature and click Add..."
+                          className="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs focus:border-cyan-500 focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddFeature}
+                          className="px-3 py-2 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-mono cursor-pointer"
+                        >
+                          Add
+                        </button>
+                      </div>
+
+                      {formData.features && formData.features.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-2">
+                          {formData.features.map((feat, idx) => (
+                            <span key={idx} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-950 border border-white/10 text-xs text-slate-300">
+                              <span>{feat}</span>
+                              <button type="button" onClick={() => handleRemoveFeature(idx)} className="text-slate-500 hover:text-rose-400">
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* 🎛️ ADVANCED MULTI-TAB MODE (Optional For Complex Configs)  */}
+          {/* ======================================================== */}
+          {editorMode === 'advanced' && (
+            <div className="space-y-4">
+              <div className="flex gap-1.5 overflow-x-auto pb-2 border-b border-white/5">
+                {[
+                  { id: 'general', label: 'General', icon: Package },
+                  { id: 'media', label: 'Media', icon: ImageIcon },
+                  { id: 'pricing', label: 'Pricing', icon: DollarSign },
+                  { id: 'apk', label: 'APK Link', icon: Smartphone },
+                  { id: 'source', label: 'Source Code', icon: Code2 },
+                  { id: 'features', label: 'Features', icon: Layers }
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveTab(tab.id as TabType)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                        isActive ? 'bg-cyan-500 text-black' : 'bg-slate-900 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {activeTab === 'general' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-mono text-slate-300 mb-1">Product Title</label>
+                    <input
+                      type="text"
+                      value={formData.name || ''}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-bold focus:border-cyan-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-mono text-slate-300 mb-1">Short Description</label>
+                    <input
+                      type="text"
+                      value={formData.shortDescription || ''}
+                      onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:border-cyan-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-mono text-slate-300 mb-1">Detailed Description</label>
+                    <textarea
+                      rows={3}
+                      value={formData.fullDescription || ''}
+                      onChange={(e) => setFormData({ ...formData, fullDescription: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:border-cyan-500 focus:outline-none"
+                    />
                   </div>
                 </div>
               )}
-            </div>
-          )}
 
-          {/* TAB 6: FEATURES & SPECS */}
-          {activeTab === 'features' && (
-            <div className="space-y-6 animate-in fade-in">
-              {/* Feature Bullets */}
-              <div className="p-5 rounded-2xl bg-slate-900/80 border border-white/10 space-y-3">
-                <label className="block text-xs font-mono text-slate-300 font-bold">
-                  Core Feature Bullet Points
-                </label>
-                <div className="space-y-2">
-                  {formData.features?.map((feat, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-white/5 text-xs text-slate-200"
+              {activeTab === 'apk' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-mono text-slate-300 mb-1">Direct APK Download Link</label>
+                    <input
+                      type="url"
+                      value={formData.apkUrl || ''}
+                      onChange={(e) => setFormData({ ...formData, apkUrl: e.target.value })}
+                      placeholder="https://..."
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-mono text-slate-300 mb-1">File Size</label>
+                    <input
+                      type="text"
+                      value={formData.apkSize || ''}
+                      onChange={(e) => setFormData({ ...formData, apkSize: e.target.value })}
+                      placeholder="e.g. 25 MB"
+                      className="w-40 px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'media' && (
+                <div className="space-y-3">
+                  <p className="text-xs text-slate-400">Manage image URLs</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={directImageUrlInput}
+                      onChange={(e) => setDirectImageUrlInput(e.target.value)}
+                      placeholder="https://..."
+                      className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddDirectImageUrl}
+                      className="px-3 py-2 rounded-xl bg-cyan-500/20 text-cyan-300 text-xs font-mono cursor-pointer"
                     >
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                        <span>{feat}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveFeature(idx)}
-                        className="p-1 rounded text-slate-400 hover:text-rose-400"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      Add Image
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'pricing' && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 text-xs font-mono text-slate-300 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="pricingTypeAdv"
+                        checked={isFree}
+                        onChange={() => setFormData({ ...formData, pricingType: 'free', price: 0 })}
+                      />
+                      <span>100% Free</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-xs font-mono text-slate-300 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="pricingTypeAdv"
+                        checked={!isFree}
+                        onChange={() => setFormData({ ...formData, pricingType: 'paid', price: formData.price || 1500 })}
+                      />
+                      <span>Paid</span>
+                    </label>
+                  </div>
+                  {!isFree && (
+                    <div>
+                      <label className="block text-xs font-mono text-slate-300 mb-1">Price (PKR)</label>
+                      <input
+                        type="number"
+                        value={formData.price ?? 1500}
+                        onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                        className="w-40 px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono"
+                      />
                     </div>
-                  ))}
+                  )}
                 </div>
+              )}
 
-                <div className="flex gap-2 pt-2">
-                  <input
-                    type="text"
-                    value={newFeature}
-                    onChange={(e) => setNewFeature(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddFeature();
-                      }
-                    }}
-                    placeholder="Add feature item..."
-                    className="flex-1 px-3.5 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs focus:border-cyan-500 focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddFeature}
-                    className="px-4 py-2 rounded-xl bg-cyan-500 text-black font-extrabold text-xs font-mono hover:bg-cyan-400 cursor-pointer"
-                  >
-                    Add
-                  </button>
+              {activeTab === 'source' && (
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2 text-xs font-mono text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.sourceAvailable ?? false}
+                      onChange={(e) => setFormData({ ...formData, sourceAvailable: e.target.checked })}
+                    />
+                    <span>Source Code Available for Sale</span>
+                  </label>
+                  {formData.sourceAvailable && (
+                    <div>
+                      <label className="block text-xs font-mono text-slate-300 mb-1">Source Code Price (PKR)</label>
+                      <input
+                        type="number"
+                        value={formData.sourcePrice ?? 0}
+                        onChange={(e) => setFormData({ ...formData, sourcePrice: Number(e.target.value) })}
+                        className="w-40 px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono"
+                      />
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
 
-              {/* Requirements */}
-              <div className="p-5 rounded-2xl bg-slate-900/80 border border-white/10 space-y-3">
-                <label className="block text-xs font-mono text-slate-300 font-bold">
-                  System Requirements & Compatibility
-                </label>
-                <div className="space-y-2">
-                  {formData.requirements?.map((req, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-white/5 text-xs text-slate-200"
+              {activeTab === 'features' && (
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newFeature}
+                      onChange={(e) => setNewFeature(e.target.value)}
+                      placeholder="Add feature..."
+                      className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddFeature}
+                      className="px-3 py-2 rounded-xl bg-cyan-500/20 text-cyan-300 text-xs font-mono cursor-pointer"
                     >
-                      <div className="flex items-center gap-2">
-                        <Cpu className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                        <span>{req}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveRequirement(idx)}
-                        className="p-1 rounded text-slate-400 hover:text-rose-400"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      Add
+                    </button>
+                  </div>
+                  {formData.features && (
+                    <div className="space-y-1">
+                      {formData.features.map((f, i) => (
+                        <div key={i} className="flex justify-between items-center text-xs p-1.5 rounded bg-slate-900 text-slate-300">
+                          <span>{f}</span>
+                          <button type="button" onClick={() => handleRemoveFeature(i)} className="text-rose-400">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
-
-                <div className="flex gap-2 pt-2">
-                  <input
-                    type="text"
-                    value={newRequirement}
-                    onChange={(e) => setNewRequirement(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddRequirement();
-                      }
-                    }}
-                    placeholder="Add requirement (e.g. Android 8.0+, 2GB RAM)..."
-                    className="flex-1 px-3.5 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs focus:border-cyan-500 focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddRequirement}
-                    className="px-4 py-2 rounded-xl bg-slate-800 text-slate-200 font-bold text-xs font-mono hover:bg-slate-700 cursor-pointer"
-                  >
-                    Add
-                  </button>
-                </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -1506,14 +912,14 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 via-sky-400 to-indigo-500 hover:brightness-110 text-black font-black text-xs font-mono flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25 transition-all cursor-pointer disabled:opacity-50"
+              className="w-full sm:w-auto px-7 py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-sky-400 to-indigo-500 hover:brightness-110 text-black font-black text-xs font-mono flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25 transition-all cursor-pointer disabled:opacity-50 btn-shimmer"
             >
               {isSubmitting ? (
                 <Loader2 className="w-4 h-4 animate-spin text-black" />
               ) : (
                 <CheckCircle2 className="w-4 h-4 text-black" />
               )}
-              <span>{isSubmitting ? 'Saving...' : 'Save & Publish Product'}</span>
+              <span>{isSubmitting ? 'Publishing...' : '🚀 Save & Publish to Store'}</span>
             </button>
           </div>
         </form>
