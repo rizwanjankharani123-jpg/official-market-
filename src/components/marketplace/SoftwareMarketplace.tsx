@@ -40,7 +40,15 @@ export const SoftwareMarketplace: React.FC<SoftwareMarketplaceProps> = ({
   onSelectProduct,
   onOpenDetails
 }) => {
-  const { products, settings, getProductSalesStats, recordFreeDownload, toggleWishlist, isInWishlist } = useApp();
+  const {
+    products,
+    settings,
+    getProductSalesStats,
+    recordFreeDownload,
+    toggleWishlist,
+    isInWishlist,
+    getUserOrderForProduct
+  } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [pricingFilter, setPricingFilter] = useState<PricingFilterType>('all');
@@ -591,43 +599,82 @@ export const SoftwareMarketplace: React.FC<SoftwareMarketplaceProps> = ({
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  {isFree ? (
-                    <button
-                      onClick={() => handleFreeDownload(product)}
-                      disabled={downloadingId === product.id}
-                      className="w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 btn-shimmer cursor-pointer disabled:opacity-50"
-                    >
-                      <DownloadCloud className="w-3.5 h-3.5 text-black" />
-                      <span>{downloadingId === product.id ? 'Downloading...' : 'Download Free'}</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => onSelectProduct(product, 'software')}
-                      className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:brightness-110 text-black font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20 btn-shimmer cursor-pointer"
-                    >
-                      {isApk ? <Smartphone className="w-3.5 h-3.5 text-black" /> : <DownloadCloud className="w-3.5 h-3.5 text-black" />}
-                      <span>{isApk ? 'Buy APK' : 'Buy Software'}</span>
-                    </button>
-                  )}
+                {(() => {
+                  const existingOrder = getUserOrderForProduct(product.id);
+                  const isOrderConfirmed = existingOrder && (existingOrder.status === 'payment_confirmed' || existingOrder.status === 'completed');
+                  const isOrderPending = existingOrder && (existingOrder.status === 'proof_submitted' || existingOrder.status === 'under_review' || existingOrder.status === 'payment_pending');
 
-                  {product.sourceAvailable ? (
-                    <button
-                      onClick={() => onSelectProduct(product, 'source_code')}
-                      className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-indigo-300 hover:text-white border border-indigo-500/30 font-bold text-xs transition-all flex items-center justify-center gap-1.5 btn-shimmer cursor-pointer"
-                    >
-                      <Code2 className="w-3.5 h-3.5 text-indigo-400" />
-                      <span>Get Source</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => onOpenDetails(product)}
-                      className="w-full py-2.5 px-3 rounded-xl bg-slate-900 text-slate-300 hover:text-white border border-white/10 font-medium text-xs transition-all btn-shimmer cursor-pointer"
-                    >
-                      Details & Info
-                    </button>
-                  )}
-                </div>
+                  if (isOrderConfirmed) {
+                    return (
+                      <div className="grid grid-cols-2 gap-2">
+                        <a
+                          href={existingOrder.downloadUrl || product.apkUrl || '#'}
+                          download={existingOrder.downloadName || `${product.name}.apk`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 cursor-pointer col-span-2"
+                        >
+                          <DownloadCloud className="w-3.5 h-3.5 text-black" />
+                          <span>Download APK 📥 (Purchased)</span>
+                        </a>
+                      </div>
+                    );
+                  }
+
+                  if (isOrderPending) {
+                    return (
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => onOpenDetails(product)}
+                          className="w-full py-2.5 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer col-span-2"
+                        >
+                          <Clock className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+                          <span>Verification Pending ⏳ (Track Status)</span>
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="grid grid-cols-2 gap-2">
+                      {isFree ? (
+                        <button
+                          onClick={() => handleFreeDownload(product)}
+                          disabled={downloadingId === product.id}
+                          className="w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 btn-shimmer cursor-pointer disabled:opacity-50"
+                        >
+                          <DownloadCloud className="w-3.5 h-3.5 text-black" />
+                          <span>{downloadingId === product.id ? 'Downloading...' : 'Download Free'}</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => onSelectProduct(product, 'software')}
+                          className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:brightness-110 text-black font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20 btn-shimmer cursor-pointer"
+                        >
+                          {isApk ? <Smartphone className="w-3.5 h-3.5 text-black" /> : <DownloadCloud className="w-3.5 h-3.5 text-black" />}
+                          <span>{isApk ? 'Buy APK' : 'Buy Software'}</span>
+                        </button>
+                      )}
+
+                      {product.sourceAvailable ? (
+                        <button
+                          onClick={() => onSelectProduct(product, 'source_code')}
+                          className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-indigo-300 hover:text-white border border-indigo-500/30 font-bold text-xs transition-all flex items-center justify-center gap-1.5 btn-shimmer cursor-pointer"
+                        >
+                          <Code2 className="w-3.5 h-3.5 text-indigo-400" />
+                          <span>Get Source</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => onOpenDetails(product)}
+                          className="w-full py-2.5 px-3 rounded-xl bg-slate-900 text-slate-300 hover:text-white border border-white/10 font-medium text-xs transition-all btn-shimmer cursor-pointer"
+                        >
+                          Details & Info
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           );

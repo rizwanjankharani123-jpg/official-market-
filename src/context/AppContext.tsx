@@ -15,7 +15,8 @@ import {
   InvoiceData,
   PersonalizedDeal,
   CampaignEvent,
-  GiveawayRecord
+  GiveawayRecord,
+  UserAccount
 } from '../types';
 import {
   INITIAL_SETTINGS,
@@ -27,8 +28,19 @@ import {
 } from '../data/seedData';
 import { db, auth } from '../lib/firebase';
 import {
+  User,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile
+} from 'firebase/auth';
+import {
   collection,
   doc,
+  getDoc,
   getDocs,
   setDoc,
   updateDoc,
@@ -79,6 +91,17 @@ interface AppContextType {
   isAdminAuthenticated: boolean;
   adminLogin: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   adminLogout: () => Promise<void>;
+  // Customer Firebase Auth & Vault
+  currentUser: User | null;
+  userProfile: UserAccount | null;
+  isUserAuthLoading: boolean;
+  isUserAuthModalOpen: boolean;
+  setIsUserAuthModalOpen: (open: boolean) => void;
+  userSignUp: (email: string, pass: string, name: string) => Promise<void>;
+  userSignIn: (email: string, pass: string) => Promise<void>;
+  userSignInWithGoogle: () => Promise<void>;
+  userSignOut: () => Promise<void>;
+  getUserOrderForProduct: (productId: string) => Order | undefined;
   // Product Actions
   addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Product>;
   updateProduct: (id: string, updates: Partial<Product>) => Promise<void>;
@@ -230,6 +253,100 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     return null;
   });
+
+  // Customer Firebase Auth States
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserAccount | null>(null);
+  const [isUserAuthLoading, setIsUserAuthLoading] = useState<boolean>(true);
+  const [isUserAuthModalOpen, setIsUserAuthModalOpen] = useState<boolean>(false);
+
+  // Synchronize Firebase Auth for Customers
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setCurrentUser(user);
+      setIsUserAuthLoading(false);
+      if (user) {
+        try {
+          const userDocRef = doc(db, 'users', user.uid);
+          const snap = await getDoc(userDocRef);
+          if (snap.exists()) {
+            setUserProfile(snap.data() as UserAccount);
+          } else {
+            const profile: UserAccount = {
+              uid: user.uid,
+              email: user.email || '',
+              displayName: user.displayName || user.email?.split('@')[0] || 'Customer',
+              photoURL: user.photoURL || '',
+              createdAt: new Date().toISOString()
+            };
+            await setDoc(userDocRef, profile);
+            setUserProfile(profile);
+          }
+        } catch (err) {
+          console.warn('Customer profile sync notice:', err);
+          setUserProfile({
+            uid: user.uid,
+            email: user.email || '',
+            displayName: user.displayName || user.email?.split('@')[0] || 'Customer',
+            photoURL: user.photoURL || ''
+          });
+        }
+      } else {
+        setUserProfile(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Customer Auth Actions
+  const userSignUp = async (email: string, pass: string, name: string) => {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    if (name.trim()) {
+      await updateProfile(cred.user, { displayName: name.trim() });
+    }
+    const profile: UserAccount = {
+      uid: cred.user.uid,
+      email: cred.user.email || email,
+      displayName: name.trim() || email.split('@')[0],
+      createdAt: new Date().toISOString()
+    };
+    try {
+      await setDoc(doc(db, 'users', cred.user.uid), profile);
+    } catch (e) {
+      console.warn('Save user doc fallback:', e);
+    }
+    setUserProfile(profile);
+  };
+
+  const userSignIn = async (email: string, pass: string) => {
+    await signInWithEmailAndPassword(auth, email, pass);
+  };
+
+  const userSignInWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    const profile: UserAccount = {
+      uid: user.uid,
+      email: user.email || '',
+      displayName: user.displayName || user.email?.split('@')[0] || 'Customer',
+      photoURL: user.photoURL || '',
+      createdAt: new Date().toISOString()
+    };
+    try {
+      await setDoc(doc(db, 'users', user.uid), profile);
+    } catch (e) {
+      console.warn('Google user sync fallback:', e);
+    }
+    setUserProfile(profile);
+  };
+
+  const userSignOut = async () => {
+    await signOut(auth);
+    setCurrentUser(null);
+    setUserProfile(null);
+  };
 
   // Keep local storage updated for persistent items
   useEffect(() => saveToLocal('settings', settings), [settings]);
@@ -401,10 +518,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }, (err) => console.warn('Firestore PM listener error:', err));
 
-      // Orders listener
+      // Orders listener (Real-time sync between Admin & Users)
       const unsubOrders = onSnapshot(collection(db, 'orders'), (snapshot) => {
-        const list = snapshot.docs.map(d => ({ ...d.data(), id: d.id } as Order));
-        setOrders(list);
+        const firestoreList = snapshot.docs.map(d => ({ ...d.data(), id: d.id } as Order));
+        setOrders(prev => {
+          const map = new Map<string, Order>();
+          firestoreList.forEach(o => map.set(o.id, o));
+          prev.forEach(o => {
+            if (!map.has(o.id)) map.set(o.id, o);
+          });
+          return Array.from(map.values()).sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        });
       }, (err) => console.warn('Firestore orders listener error:', err));
 
       // Custom Requests listener
@@ -1232,6 +1358,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const newOrder: Order = {
       id: orderId,
+      userId: currentUser?.uid || '',
+      customerUid: currentUser?.uid || '',
       customerName: data.customerName,
       customerEmail: data.customerEmail,
       customerPhone: data.customerPhone,
@@ -1248,7 +1376,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       paymentMethodId: data.paymentMethodId,
       paymentMethodName: data.paymentMethodName,
       transactionId: data.transactionId,
-      paymentProofUrl: data.paymentProofUrl,
+      paymentProofUrl: data.paymentProofUrl || '',
       status: 'proof_submitted',
       downloadAccessGranted: false,
       downloadUrl: downloadUrl || '',
@@ -1260,16 +1388,62 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatedAt: now
     };
 
-    setOrders(prev => [newOrder, ...prev]);
+    // Update state immediately
+    setOrders(prev => [newOrder, ...prev.filter(o => o.id !== newOrder.id)]);
 
+    // Store recent order ID in local storage for guest session reference
+    try {
+      const recents = loadFromLocal<string[]>('affy_recent_order_ids', []);
+      saveToLocal('affy_recent_order_ids', [newOrder.id, ...recents.filter(id => id !== newOrder.id)]);
+    } catch {}
+
+    // Persist to Firestore with resilience and error handling
     try {
       await setDoc(doc(db, 'orders', orderId), newOrder);
-    } catch (e) {
-      console.warn('Firestore order fallback:', e);
+      console.log('✓ Order written to Firestore orders collection:', orderId);
+    } catch (e: any) {
+      console.error('Firestore order write error:', e);
+      // If error was document size limit due to large proof image, save without the heavy string
+      if (e?.message && e.message.includes('maximum allowed size')) {
+        try {
+          const trimmedOrder = { ...newOrder, paymentProofUrl: '' };
+          await setDoc(doc(db, 'orders', orderId), trimmedOrder);
+          console.log('✓ Saved trimmed order to Firestore after size limit catch:', orderId);
+        } catch (innerErr) {
+          console.error('Firestore fallback retry failed:', innerErr);
+        }
+      }
     }
 
     return newOrder;
   };
+
+  const getUserOrderForProduct = useCallback((productId: string): Order | undefined => {
+    const userEmail = currentUser?.email?.toLowerCase();
+    const userUid = currentUser?.uid;
+
+    const matching = orders.filter(o => {
+      const matchProduct = o.productId === productId || (o.includedProductIds && o.includedProductIds.includes(productId));
+      if (!matchProduct) return false;
+
+      if (userUid && (o.userId === userUid || o.customerUid === userUid)) return true;
+      if (userEmail && o.customerEmail && o.customerEmail.toLowerCase() === userEmail) return true;
+
+      // Check guest stored order IDs
+      const recentIds = loadFromLocal<string[]>('affy_recent_order_ids', []);
+      if (recentIds.includes(o.id)) return true;
+
+      return false;
+    });
+
+    if (matching.length === 0) return undefined;
+
+    // Prioritize confirmed orders first, then pending orders
+    const confirmed = matching.find(o => o.status === 'payment_confirmed' || o.status === 'completed');
+    if (confirmed) return confirmed;
+
+    return matching[0];
+  }, [currentUser, orders]);
 
   const updateOrderStatus = async (
     orderId: string,
@@ -1498,6 +1672,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isAdminAuthenticated,
         adminLogin,
         adminLogout,
+        currentUser,
+        userProfile,
+        isUserAuthLoading,
+        isUserAuthModalOpen,
+        setIsUserAuthModalOpen,
+        userSignUp,
+        userSignIn,
+        userSignInWithGoogle,
+        userSignOut,
+        getUserOrderForProduct,
         addProduct,
         updateProduct,
         publishProductVersion,

@@ -43,6 +43,7 @@ import { TermsView } from './components/legal/TermsView';
 import { InvoiceModal } from './components/documents/InvoiceModal';
 import { CertificateModal } from './components/documents/CertificateModal';
 import { OpeningAnimation } from './components/common/OpeningAnimation';
+import { UserAuthModal } from './components/auth/UserAuthModal';
 
 // Admin CMS
 import { AdminLoginModal, AdminLoginForm } from './components/admin/AdminLoginModal';
@@ -52,7 +53,15 @@ import { updatePageSEO } from './utils/seo';
 import { Lock, ShieldAlert, ShieldCheck, LogOut, ArrowLeft } from 'lucide-react';
 
 const MainAppContent: React.FC = () => {
-  const { activeView, setActiveView, isAdminAuthenticated, adminSession, adminLogout } = useApp();
+  const {
+    activeView,
+    setActiveView,
+    isAdminAuthenticated,
+    adminSession,
+    adminLogout,
+    isUserAuthModalOpen,
+    setIsUserAuthModalOpen
+  } = useApp();
   const [showOpeningAnimation, setShowOpeningAnimation] = useState<boolean>(() => {
     try {
       return !sessionStorage.getItem('affy_opening_seen');
@@ -525,6 +534,12 @@ const MainAppContent: React.FC = () => {
       <CertificateModal
         orderId={selectedCertOrderId}
         onClose={() => setSelectedCertOrderId(null)}
+      />
+
+      {/* 5. Customer Firebase Authentication Modal */}
+      <UserAuthModal
+        isOpen={isUserAuthModalOpen}
+        onClose={() => setIsUserAuthModalOpen(false)}
       />
     </div>
   );

@@ -41,7 +41,15 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onClose,
   onSelectProduct
 }) => {
-  const { getProductSalesStats, recordFreeDownload, recordProductView, toggleWishlist, isInWishlist } = useApp();
+  const {
+    getProductSalesStats,
+    recordFreeDownload,
+    recordProductView,
+    toggleWishlist,
+    isInWishlist,
+    getUserOrderForProduct,
+    setActiveView
+  } = useApp();
   const [downloadingFree, setDownloadingFree] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
@@ -63,6 +71,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const totalSales = getProductSalesStats(product.id);
   const softwareSales = getProductSalesStats(product.id, 'software');
   const sourceSales = getProductSalesStats(product.id, 'source_code');
+
+  const existingOrder = getUserOrderForProduct(product.id);
+  const isOrderConfirmed = existingOrder && (existingOrder.status === 'payment_confirmed' || existingOrder.status === 'completed');
+  const isOrderPending = existingOrder && (existingOrder.status === 'proof_submitted' || existingOrder.status === 'under_review' || existingOrder.status === 'payment_pending');
 
   const handleFreeDownload = async () => {
     setDownloadingFree(true);
@@ -439,7 +451,52 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </div>
               )}
 
-              {isFree ? (
+              {isOrderConfirmed ? (
+                <div className="p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 space-y-2 text-left">
+                  <div className="flex items-center justify-between text-xs font-bold">
+                    <span className="flex items-center gap-1.5 text-white">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      Payment Verified & Access Granted!
+                    </span>
+                    <span className="font-mono text-emerald-400 font-bold">#{existingOrder.id}</span>
+                  </div>
+                  <p className="text-[11px] text-slate-300">
+                    Your purchase has been confirmed by Aftab. You can download your official file anytime.
+                  </p>
+                  <a
+                    href={existingOrder.downloadUrl || product.apkUrl || '#'}
+                    download={existingOrder.downloadName || `${product.name}.apk`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 cursor-pointer"
+                  >
+                    <DownloadCloud className="w-4 h-4 text-black" />
+                    <span>Download Verified APK 📥</span>
+                  </a>
+                </div>
+              ) : isOrderPending ? (
+                <div className="p-4 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-200 space-y-2.5 text-left">
+                  <div className="flex items-center justify-between text-xs font-bold">
+                    <span className="flex items-center gap-1.5 text-white">
+                      <Clock className="w-4 h-4 text-amber-400 animate-spin" />
+                      Order Pending Verification
+                    </span>
+                    <span className="font-mono text-amber-400 font-bold">#{existingOrder.id}</span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    You have already ordered this APK. Aftab is verifying your transaction ID & payment screenshot. Download access will unlock shortly.
+                  </p>
+                  <button
+                    onClick={() => {
+                      onClose();
+                      setActiveView('track-order');
+                    }}
+                    className="w-full py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-mono text-xs font-bold border border-amber-500/40 flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <span>Track Order & View Invoice 🔍</span>
+                  </button>
+                </div>
+              ) : isFree ? (
                 <button
                   onClick={handleFreeDownload}
                   disabled={downloadingFree}

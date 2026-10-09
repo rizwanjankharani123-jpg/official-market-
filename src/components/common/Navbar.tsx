@@ -40,19 +40,28 @@ export const Navbar: React.FC = () => {
     settings,
     isAdminAuthenticated,
     wishlist,
-    unreadAnnouncementsCount
+    unreadAnnouncementsCount,
+    currentUser,
+    userProfile,
+    setIsUserAuthModalOpen,
+    userSignOut
   } = useApp();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationModalOpen, setNotificationModalOpen] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const userDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setMoreDropdownOpen(false);
+      }
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
+        setUserDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -354,6 +363,79 @@ export const Navbar: React.FC = () => {
               <FolderArchive className="w-3.5 h-3.5" />
               <span>My Vault</span>
             </button>
+
+            {/* Customer Authentication & Account Profile */}
+            <div className="relative" ref={userDropdownRef}>
+              {currentUser ? (
+                <button
+                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20 transition-all cursor-pointer"
+                  title="My Account"
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  <span className="font-bold max-w-[90px] sm:max-w-[120px] truncate">
+                    {userProfile?.displayName || currentUser.displayName || currentUser.email?.split('@')[0] || 'Account'}
+                  </span>
+                  <ChevronDown className={`w-3 h-3 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+              ) : (
+                <button
+                  onClick={() => setIsUserAuthModalOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono bg-slate-900/90 border border-white/10 hover:border-cyan-500/40 text-slate-300 hover:text-white transition-all cursor-pointer"
+                  title="Sign In / Register"
+                >
+                  <User className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Sign In</span>
+                </button>
+              )}
+
+              {/* User Dropdown Menu */}
+              {currentUser && userDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-[#090d16] border border-cyan-500/30 p-2 shadow-2xl shadow-cyan-950/70 space-y-1 z-50 text-left animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-3 py-2 border-b border-white/10 space-y-0.5">
+                    <p className="text-xs font-bold text-white truncate font-mono">
+                      {userProfile?.displayName || currentUser.displayName || 'Customer'}
+                    </p>
+                    <p className="text-[10px] text-slate-400 truncate font-mono">
+                      {currentUser.email}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setUserDropdownOpen(false);
+                      handleNavClick('library');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-800 hover:text-white text-left font-mono transition-colors cursor-pointer"
+                  >
+                    <FolderArchive className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>My Orders & APKs</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setUserDropdownOpen(false);
+                      handleNavClick('track-order');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-800 hover:text-white text-left font-mono transition-colors cursor-pointer"
+                  >
+                    <Search className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Track Order TRX</span>
+                  </button>
+
+                  <button
+                    onClick={async () => {
+                      setUserDropdownOpen(false);
+                      await userSignOut();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-red-400 hover:bg-red-500/10 text-left font-mono transition-colors cursor-pointer border-t border-white/5 mt-1"
+                  >
+                    <X className="w-3.5 h-3.5 text-red-400" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Start Project CTA */}
             <button

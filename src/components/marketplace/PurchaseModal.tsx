@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Product, ProductBundle, PurchaseType, PaymentMethod } from '../../types';
+import { compressImageFile } from '../../utils/imageCompression';
 import {
   X,
   ShieldCheck,
@@ -41,7 +42,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
   onClose,
   onOrderSuccess
 }) => {
-  const { paymentMethods, createOrder, settings } = useApp();
+  const { paymentMethods, createOrder, settings, currentUser, setIsUserAuthModalOpen } = useApp();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [purchaseType, setPurchaseType] = useState<PurchaseType>(bundle ? 'bundle' : initialType);
   const [selectedMethodId, setSelectedMethodId] = useState<string>('');
@@ -49,13 +50,21 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
 
   // Step 3 inputs
   const [transactionId, setTransactionId] = useState('');
-  const [customerName, setCustomerName] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerName, setCustomerName] = useState(currentUser?.displayName || '');
+  const [customerEmail, setCustomerEmail] = useState(currentUser?.email || '');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerNote, setCustomerNote] = useState('');
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Auto-sync customer details with currentUser if logged in
+  useEffect(() => {
+    if (currentUser) {
+      if (currentUser.displayName && !customerName) setCustomerName(currentUser.displayName);
+      if (currentUser.email && !customerEmail) setCustomerEmail(currentUser.email);
+    }
+  }, [currentUser]);
 
   // Lottie-style Order Success State
   const [completedOrder, setCompletedOrder] = useState<{
@@ -126,19 +135,25 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setErrorMessage('Screenshot size must be under 5MB');
+      if (file.size > 8 * 1024 * 1024) {
+        setErrorMessage('Screenshot size must be under 8MB');
         return;
       }
       setErrorMessage('');
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setScreenshotPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        // Automatically optimize & compress to < 80KB so Firestore 1MB quota is never exceeded
+        const compressed = await compressImageFile(file, 900, 0.72);
+        setScreenshotPreview(compressed);
+      } catch {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setScreenshotPreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 

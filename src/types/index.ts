@@ -268,6 +268,8 @@ export interface PaymentMethod {
 
 export interface Order {
   id: string; // e.g. AFFY-ORD-XXXXXX
+  userId?: string; // Firebase Auth User ID
+  customerUid?: string;
   customerName: string;
   customerEmail: string;
   customerPhone?: string;
@@ -382,4 +384,13 @@ export interface InvoiceData {
   brandName: string;
   email: string;
   phone: string;
+}
+
+export interface UserAccount {
+  uid: string;
+  email: string;
+  displayName?: string;
+  photoURL?: string;
+  phone?: string;
+  createdAt?: string;
 }
