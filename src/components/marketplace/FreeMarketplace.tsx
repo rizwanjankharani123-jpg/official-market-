@@ -13,7 +13,8 @@ import {
   Package,
   Layers,
   ArrowRight,
-  Smartphone
+  Smartphone,
+  ExternalLink
 } from 'lucide-react';
 
 interface FreeMarketplaceProps {
@@ -254,15 +255,33 @@ export const FreeMarketplace: React.FC<FreeMarketplaceProps> = ({
                   </div>
                 </div>
 
-                {/* Source Code Upsell Banner if available */}
+                {/* Live Web Preview link if available */}
+                {product.websitePreviewUrl && product.websitePreviewUrl.trim().length > 0 && (
+                  <a
+                    href={product.websitePreviewUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-mono font-bold transition-all flex items-center justify-between"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Live Web Preview / Demo</span>
+                    </span>
+                    <span className="text-[10px] uppercase font-mono text-cyan-400">View ↗</span>
+                  </a>
+                )}
+
+                {/* Source Code Banner if available */}
                 {product.sourceAvailable && (
                   <div className="p-2.5 rounded-xl bg-indigo-950/30 border border-indigo-500/20 flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2 text-indigo-300">
                       <Code2 className="w-4 h-4 text-indigo-400 shrink-0" />
-                      <span className="text-[11px] font-mono">Source Code License:</span>
+                      <span className="text-[11px] font-mono">
+                        {(product.sourcePrice === 0 || !product.sourcePrice) ? 'Free Source Code (.ZIP):' : 'Source Code License:'}
+                      </span>
                     </div>
-                    <span className="font-bold font-mono text-white text-xs">
-                      PKR {(product.sourcePrice || 0).toLocaleString()}
+                    <span className={`font-bold font-mono text-xs ${(product.sourcePrice === 0 || !product.sourcePrice) ? 'text-emerald-400' : 'text-white'}`}>
+                      {(product.sourcePrice === 0 || !product.sourcePrice) ? 'PKR 0 / Free' : `PKR ${product.sourcePrice.toLocaleString()}`}
                     </span>
                   </div>
                 )}
@@ -298,14 +317,37 @@ export const FreeMarketplace: React.FC<FreeMarketplaceProps> = ({
                   <span>{downloadingId === product.id ? 'Downloading...' : 'Download APK'}</span>
                 </button>
 
-                {product.sourceAvailable && onSelectProduct ? (
-                  <button
-                    onClick={() => onSelectProduct(product, 'source_code')}
-                    className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-indigo-300 hover:text-white border border-indigo-500/30 font-bold text-xs transition-all flex items-center justify-center gap-1.5 btn-shimmer cursor-pointer active:scale-95"
-                  >
-                    <Code2 className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Get Source</span>
-                  </button>
+                {product.sourceAvailable ? (
+                  (product.sourcePrice === 0 || !product.sourcePrice) ? (
+                    <button
+                      onClick={() => {
+                        if (product.sourceZipUrl) {
+                          const a = document.createElement('a');
+                          a.href = product.sourceZipUrl;
+                          a.download = `${product.name.replace(/\s+/g, '_')}_Source.zip`;
+                          a.target = '_blank';
+                          a.rel = 'noopener noreferrer';
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                        } else {
+                          onOpenDetails(product);
+                        }
+                      }}
+                      className="w-full py-2.5 px-3 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 hover:text-white border border-emerald-500/40 font-bold text-xs transition-all flex items-center justify-center gap-1.5 btn-shimmer cursor-pointer active:scale-95"
+                    >
+                      <DownloadCloud className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Free Source</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onSelectProduct ? onSelectProduct(product, 'source_code') : onOpenDetails(product)}
+                      className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-indigo-300 hover:text-white border border-indigo-500/30 font-bold text-xs transition-all flex items-center justify-center gap-1.5 btn-shimmer cursor-pointer active:scale-95"
+                    >
+                      <Code2 className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>Get Source</span>
+                    </button>
+                  )
                 ) : (
                   <button
                     onClick={() => onOpenDetails(product)}

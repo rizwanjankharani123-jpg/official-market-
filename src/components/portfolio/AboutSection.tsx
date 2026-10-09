@@ -1,6 +1,8 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { AftabAvatar } from '../common/AftabAvatar';
+import { AnimatedAboutLetters } from './AnimatedAboutLetters';
+import { Aftab3DPhotoPortal } from './Aftab3DPhotoPortal';
 import {
   Code2,
   Smartphone,
@@ -59,18 +61,13 @@ export const AboutSection: React.FC = () => {
 
   return (
     <section id="about" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-white/5">
-      {/* Section Header */}
-      <div className="space-y-3 mb-16 text-left">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-xs font-mono">
-          <Terminal className="w-3.5 h-3.5" />
-          <span>ABOUT AFTAB & AFFY OFFICIAL</span>
-        </div>
-        <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-          Engineering Practical Software <span className="text-cyan-400">&</span> Digital Solutions
-        </h2>
-        <p className="text-sm sm:text-base text-slate-300 max-w-3xl leading-relaxed">
-          Get to know the developer behind the platform, why AFFY OFFICIAL exists, and how you can access verified software and source-code packages.
-        </p>
+      {/* 3D Animated Kinetic Letters Header */}
+      <div className="mb-14">
+        <AnimatedAboutLetters
+          prefix="SYSTEM ARCHITECT & DEVELOPER"
+          name="AFTAB"
+          tagline="Engineering Practical Software, Android APKs & Full Commercial Source Packages"
+        />
       </div>
 
       {/* Main Personal Profile & Message Grid */}
@@ -137,48 +134,32 @@ export const AboutSection: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Column: Verified Profile Card & Quick Actions */}
+        {/* Right Column: 3D Holographic Animated Photo Portal of Aftab */}
         <div className="lg:col-span-5 space-y-6">
-          {/* Profile Card with Exact Photo */}
-          <div className="p-6 rounded-3xl bg-[#090d16] border border-cyan-500/30 text-left space-y-5 shadow-2xl shadow-cyan-950/30">
-            <div className="relative aspect-[4/4.5] rounded-2xl overflow-hidden bg-slate-900 border border-white/10">
-              <AftabAvatar
-                className="w-full h-full"
-                imgClassName="w-full h-full object-cover object-top"
-                alt="Aftab — Web Developer & Software Developer"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#090d16] via-transparent to-black/30" />
-              <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/80 backdrop-blur-md border border-cyan-500/30 text-[10px] font-mono text-cyan-300 font-bold">
-                VERIFIED DEVELOPER
-              </div>
-              <div className="absolute bottom-3 inset-x-3 p-3 rounded-xl bg-slate-950/90 backdrop-blur-md border border-white/10">
-                <p className="text-sm font-bold text-white font-mono">Aftab</p>
-                <p className="text-xs text-cyan-400">Web Developer & Software Developer</p>
-              </div>
-            </div>
+          {/* 3D Interactive Parallax Photo Portal */}
+          <Aftab3DPhotoPortal className="w-full" showControls={true} />
 
-            {/* Platform Purpose Highlights */}
-            <div className="space-y-2.5 text-xs text-slate-300">
-              <div className="flex items-center justify-between py-1.5 border-b border-white/5">
-                <span className="text-slate-400">Platform</span>
-                <span className="font-mono text-white font-bold">AFFY OFFICIAL</span>
-              </div>
-              <div className="flex items-center justify-between py-1.5 border-b border-white/5">
-                <span className="text-slate-400">Brand Identity</span>
-                <span className="font-mono text-cyan-300 font-semibold">CodeWithAffy</span>
-              </div>
-              <div className="flex items-center justify-between py-1.5 border-b border-white/5">
-                <span className="text-slate-400">Specialization</span>
-                <span className="text-white">Web Apps, Android APKs & Source Code</span>
-              </div>
-              <div className="flex items-center justify-between py-1.5">
-                <span className="text-slate-400">Direct Support</span>
-                <span className="text-emerald-400 font-semibold">WhatsApp & Email</span>
-              </div>
+          {/* Platform Purpose Highlights */}
+          <div className="p-5 rounded-2xl bg-[#090d16] border border-white/10 space-y-2.5 text-xs text-slate-300 text-left">
+            <div className="flex items-center justify-between py-1.5 border-b border-white/5">
+              <span className="text-slate-400">Platform</span>
+              <span className="font-mono text-white font-bold">AFFY OFFICIAL</span>
+            </div>
+            <div className="flex items-center justify-between py-1.5 border-b border-white/5">
+              <span className="text-slate-400">Brand Identity</span>
+              <span className="font-mono text-cyan-300 font-semibold">CodeWithAffy</span>
+            </div>
+            <div className="flex items-center justify-between py-1.5 border-b border-white/5">
+              <span className="text-slate-400">Specialization</span>
+              <span className="text-white">Web Apps, Android APKs & Source Code</span>
+            </div>
+            <div className="flex items-center justify-between py-1.5">
+              <span className="text-slate-400">Direct Support</span>
+              <span className="text-emerald-400 font-semibold">WhatsApp & Email</span>
             </div>
 
             {/* Quick Contact CTAs */}
-            <div className="pt-2 grid grid-cols-2 gap-2">
+            <div className="pt-3 grid grid-cols-2 gap-2">
               <a
                 href={whatsappUrl}
                 target="_blank"

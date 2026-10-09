@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GiveawayRecord, GiveawayStatus, Product } from '../../types';
 import {
   X,
@@ -26,8 +26,6 @@ export const GiveawayEditorModal: React.FC<GiveawayEditorModalProps> = ({
   onClose,
   onSave
 }) => {
-  if (!isOpen) return null;
-
   const { products } = useApp();
 
   const [formData, setFormData] = useState<Partial<GiveawayRecord>>({
@@ -50,6 +48,31 @@ export const GiveawayEditorModal: React.FC<GiveawayEditorModalProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        title: giveaway?.title || '',
+        description: giveaway?.description || '',
+        prizeDescription: giveaway?.prizeDescription || 'Full Source Code + Lifetime License',
+        relatedProductId: giveaway?.relatedProductId || '',
+        startDate: giveaway?.startDate || new Date().toISOString().split('T')[0],
+        endDate: giveaway?.endDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        status: giveaway?.status || 'active',
+        winnerName: giveaway?.winnerName || '',
+        winnerEmailMasked: giveaway?.winnerEmailMasked || '',
+        winnerCity: giveaway?.winnerCity || '',
+        winnerAnnouncedAt: giveaway?.winnerAnnouncedAt || '',
+        proofImageUrl: giveaway?.proofImageUrl || '',
+        adminNotes: giveaway?.adminNotes || '',
+        published: giveaway?.published ?? false,
+        ...giveaway
+      });
+      setErrorMessage('');
+    }
+  }, [isOpen, giveaway]);
+
+  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

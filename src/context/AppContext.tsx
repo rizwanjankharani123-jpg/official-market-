@@ -183,6 +183,25 @@ function saveToLocal<T>(key: string, data: T) {
   }
 }
 
+export function cleanForFirestore<T extends Record<string, any>>(obj: T): any {
+  if (obj === null || obj === undefined) return null;
+  if (Array.isArray(obj)) {
+    return obj
+      .map((item) => (typeof item === 'object' && item !== null ? cleanForFirestore(item) : item))
+      .filter((i) => i !== undefined);
+  }
+  const clean: Record<string, any> = {};
+  for (const [key, val] of Object.entries(obj)) {
+    if (val === undefined) continue;
+    if (val !== null && typeof val === 'object' && !(val instanceof Date)) {
+      clean[key] = cleanForFirestore(val);
+    } else {
+      clean[key] = val;
+    }
+  }
+  return clean;
+}
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<SiteSettings>(() => loadFromLocal('settings', INITIAL_SETTINGS));
   const [products, setProducts] = useState<Product[]>(() => loadFromLocal('products', []));
@@ -607,7 +626,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setProducts(prev => [newProduct, ...prev]);
 
     try {
-      await setDoc(doc(db, 'products', id), newProduct);
+      const sanitized = cleanForFirestore(newProduct);
+      await setDoc(doc(db, 'products', id), sanitized);
     } catch (e) {
       console.warn('Firestore setDoc fallback:', e);
     }
@@ -633,7 +653,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const now = new Date().toISOString();
     setProducts(prev => prev.map(p => (p.id === id ? { ...p, ...updates, updatedAt: now } : p)));
     try {
-      await updateDoc(doc(db, 'products', id), { ...updates, updatedAt: now });
+      const sanitized = cleanForFirestore({ ...updates, updatedAt: now });
+      await updateDoc(doc(db, 'products', id), sanitized);
     } catch (e) {
       console.warn('Firestore updateDoc fallback:', e);
     }

@@ -139,10 +139,18 @@ export const SourceCodeMarketplace: React.FC<SourceCodeMarketplaceProps> = ({
                 </div>
 
                 <div className="text-right shrink-0">
-                  <p className="text-[10px] uppercase font-mono text-slate-400">Source License</p>
-                  <p className="text-2xl font-black text-white font-mono">
-                    PKR {(product.sourcePrice || product.price).toLocaleString()}
+                  <p className="text-[10px] uppercase font-mono text-slate-400">
+                    {(product.sourcePrice === 0 || !product.sourcePrice) ? 'Free Source Code' : 'Source License'}
                   </p>
+                  {(product.sourcePrice === 0 || !product.sourcePrice) ? (
+                    <p className="text-2xl font-black text-emerald-400 font-mono">
+                      PKR 0 <span className="text-xs font-normal text-slate-400 font-sans">/ Free</span>
+                    </p>
+                  ) : (
+                    <p className="text-2xl font-black text-white font-mono">
+                      PKR {product.sourcePrice.toLocaleString()}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -208,22 +216,59 @@ export const SourceCodeMarketplace: React.FC<SourceCodeMarketplaceProps> = ({
             </div>
 
             {/* Actions Bar */}
-            <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-3">
-              <button
-                onClick={() => onOpenDetails(product)}
-                className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95"
-              >
-                <Eye className="w-3.5 h-3.5" />
-                <span>Inspect Architecture</span>
-              </button>
+            <div className="pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => onOpenDetails(product)}
+                  className="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Inspect</span>
+                </button>
 
-              <button
-                onClick={() => onSelectProduct(product, 'source_code')}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:brightness-110 text-white font-extrabold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 cursor-pointer btn-shimmer active:scale-95"
-              >
-                <Code2 className="w-4 h-4 text-white" />
-                <span>Purchase Source Code License (PKR {(product.sourcePrice || product.price).toLocaleString()})</span>
-              </button>
+                {product.websitePreviewUrl && product.websitePreviewUrl.trim().length > 0 && (
+                  <a
+                    href={product.websitePreviewUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3.5 py-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Live Preview</span>
+                  </a>
+                )}
+              </div>
+
+              {(product.sourcePrice === 0 || !product.sourcePrice) ? (
+                <button
+                  onClick={() => {
+                    if (product.sourceZipUrl) {
+                      const a = document.createElement('a');
+                      a.href = product.sourceZipUrl;
+                      a.download = `${product.name.replace(/\s+/g, '_')}_Source.zip`;
+                      a.target = '_blank';
+                      a.rel = 'noopener noreferrer';
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                    } else {
+                      onOpenDetails(product);
+                    }
+                  }}
+                  className="flex-1 sm:flex-none py-2.5 px-5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:brightness-110 text-black font-extrabold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 cursor-pointer btn-shimmer active:scale-95"
+                >
+                  <DownloadCloud className="w-4 h-4 text-black" />
+                  <span>Download Free Source (.ZIP)</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => onSelectProduct(product, 'source_code')}
+                  className="flex-1 sm:flex-none py-2.5 px-5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:brightness-110 text-white font-extrabold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 cursor-pointer btn-shimmer active:scale-95"
+                >
+                  <Code2 className="w-4 h-4 text-white" />
+                  <span>Purchase Source Code (PKR {product.sourcePrice.toLocaleString()})</span>
+                </button>
+              )}
             </div>
           </div>
         ))}

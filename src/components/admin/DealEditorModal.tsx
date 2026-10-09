@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PersonalizedDeal, Product } from '../../types';
 import {
   X,
@@ -26,8 +26,6 @@ export const DealEditorModal: React.FC<DealEditorModalProps> = ({
   onClose,
   onSave
 }) => {
-  if (!isOpen) return null;
-
   const { products } = useApp();
 
   const [formData, setFormData] = useState<Partial<PersonalizedDeal>>({
@@ -48,6 +46,29 @@ export const DealEditorModal: React.FC<DealEditorModalProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        offerName: deal?.offerName || '',
+        description: deal?.description || '',
+        discountType: deal?.discountType || 'percentage',
+        discountValue: deal?.discountValue || 15,
+        startDate: deal?.startDate || new Date().toISOString().split('T')[0],
+        endDate: deal?.endDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        active: deal?.active ?? true,
+        eligibilityCondition: deal?.eligibilityCondition || 'all_customers',
+        targetCategory: deal?.targetCategory || '',
+        promoCode: deal?.promoCode || '',
+        bannerUrl: deal?.bannerUrl || '',
+        eligibleProductIds: deal?.eligibleProductIds || [],
+        ...deal
+      });
+      setErrorMessage('');
+    }
+  }, [isOpen, deal]);
+
+  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

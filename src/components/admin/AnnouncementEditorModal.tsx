@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MarketplaceAnnouncement, AnnouncementType, Product } from '../../types';
 import {
   X,
@@ -29,8 +29,6 @@ export const AnnouncementEditorModal: React.FC<AnnouncementEditorModalProps> = (
   onClose,
   onSave
 }) => {
-  if (!isOpen) return null;
-
   const { products } = useApp();
 
   const [formData, setFormData] = useState<Partial<MarketplaceAnnouncement>>({
@@ -49,6 +47,27 @@ export const AnnouncementEditorModal: React.FC<AnnouncementEditorModalProps> = (
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        title: announcement?.title || '',
+        shortDescription: announcement?.shortDescription || announcement?.message || '',
+        fullContent: announcement?.fullContent || announcement?.message || '',
+        image: announcement?.image || '',
+        announcementType: announcement?.announcementType || (announcement?.type as any) || 'General AFFY OFFICIAL Update',
+        relatedProductId: announcement?.relatedProductId || announcement?.productId || '',
+        linkView: announcement?.linkView || 'software',
+        status: announcement?.status || (announcement?.active !== false ? 'published' : 'draft'),
+        active: announcement?.active ?? true,
+        publishedAt: announcement?.publishedAt || new Date().toISOString(),
+        ...announcement
+      });
+      setErrorMessage('');
+    }
+  }, [isOpen, announcement]);
+
+  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

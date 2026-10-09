@@ -178,6 +178,37 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
     }
   };
 
+  // Real Source Code ZIP file upload handler with Firebase Storage
+  const handleSourceFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setErrorMessage('');
+    setSourceUploading(true);
+    setSourceUploadProgress(0);
+
+    const fileSize = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
+
+    try {
+      const { downloadUrl } = await uploadFileToFirebaseStorage(
+        file,
+        'products/sources',
+        (progress) => setSourceUploadProgress(progress)
+      );
+
+      setFormData((prev) => ({
+        ...prev,
+        sourceSize: fileSize,
+        sourceZipUrl: downloadUrl,
+        sourceAvailable: true
+      }));
+    } catch (err: any) {
+      setErrorMessage('Source ZIP file upload failed: ' + (err.message || 'Unknown error'));
+    } finally {
+      setSourceUploading(false);
+    }
+  };
+
   const handleAddFeature = () => {
     if (!newFeature.trim()) return;
     setFormData({
@@ -222,6 +253,9 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
       const cleanFiles = (formData.includedFiles || []).filter(f => f && f.trim().length > 0);
       const cleanTech = (formData.techStack || []).filter(t => t && t.trim().length > 0);
 
+      const isSourceAvailable = Boolean(formData.sourceAvailable);
+      const isSourceFree = formData.sourcePrice === 0 || !formData.sourcePrice;
+
       const payload: Partial<Product> = {
         ...formData,
         name: formData.name.trim(),
@@ -229,10 +263,15 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
         shortDescription: formData.shortDescription?.trim() || '',
         fullDescription: formData.fullDescription?.trim() || '',
         aboutSoftware: formData.aboutSoftware?.trim() || '',
+        aboutSource: formData.aboutSource?.trim() || '',
         demoImages: finalDemoImages,
         apkUrl: formData.apkUrl?.trim() || '',
         apkSize: formData.apkSize?.trim() || '',
         websitePreviewUrl: formData.websitePreviewUrl?.trim() || '',
+        sourceAvailable: isSourceAvailable,
+        sourcePrice: isSourceAvailable ? (isSourceFree ? 0 : Number(formData.sourcePrice || 0)) : 0,
+        sourceZipUrl: isSourceAvailable ? (formData.sourceZipUrl?.trim() || '') : '',
+        sourceSize: isSourceAvailable ? (formData.sourceSize?.trim() || '') : '',
         features: cleanFeatures,
         requirements: cleanReqs,
         includedFiles: cleanFiles,
@@ -241,7 +280,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
         pricingType: isFree ? 'free' : 'paid',
         price: isFree ? 0 : Number(formData.price || 0),
         currency: 'PKR',
-        isApkOnly: formData.category === 'Android App' && !formData.sourceAvailable
+        isApkOnly: (formData.category === 'Android App') && !isSourceAvailable
       };
 
       await onSave(payload);
@@ -468,6 +507,149 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                 </div>
               </div>
 
+              {/* Row 3.5: VIP Source Code (.ZIP) Toggle [ON / OFF] & Upload / Link */}
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-[#0c0f1d] to-[#060810] border border-indigo-500/35 space-y-3 shadow-lg shadow-indigo-950/30">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono text-indigo-300 font-bold flex items-center gap-2">
+                    <Code2 className="w-4 h-4 text-indigo-400" />
+                    <span>Source Code (.ZIP) Package</span>
+                  </label>
+
+                  {/* VIP Toggle Switch for Source Code */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextVal = !formData.sourceAvailable;
+                      setFormData({
+                        ...formData,
+                        sourceAvailable: nextVal,
+                        isApkOnly: formData.category === 'Android App' && !nextVal
+                      });
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-mono font-extrabold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                      formData.sourceAvailable
+                        ? 'bg-indigo-500 text-white border-indigo-400 shadow-md shadow-indigo-500/25'
+                        : 'bg-slate-900 text-slate-400 border-white/10 hover:text-white'
+                    }`}
+                  >
+                    <span>{formData.sourceAvailable ? '📦 Source Code: ON' : 'Source Code: OFF (APK Only)'}</span>
+                  </button>
+                </div>
+
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  {formData.sourceAvailable
+                    ? 'Source code download is ACTIVE. Choose whether it is 100% Free or Paid, and provide a .ZIP download link or upload file.'
+                    : 'Toggle ON if you want to provide source code (.ZIP) for free or paid. If OFF, only APK/software download is offered.'}
+                </p>
+
+                {formData.sourceAvailable && (
+                  <div className="space-y-3 pt-1 border-t border-indigo-500/20">
+                    {/* Free or Paid Source Selector */}
+                    <div>
+                      <label className="text-[11px] font-mono text-slate-300 mb-1.5 block">
+                        Source Code Distribution & Price:
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, sourcePrice: 0 })}
+                          className={`py-1.5 px-3 rounded-xl border text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                            formData.sourcePrice === 0 || !formData.sourcePrice
+                              ? 'bg-emerald-500 text-black font-extrabold shadow-sm border-emerald-400'
+                              : 'bg-slate-900 text-slate-400 border-white/5 hover:text-white'
+                          }`}
+                        >
+                          <span>🟢 Free Source Code (PKR 0)</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFormData({
+                              ...formData,
+                              sourcePrice: formData.sourcePrice && formData.sourcePrice > 0 ? formData.sourcePrice : 3500
+                            })
+                          }
+                          className={`py-1.5 px-3 rounded-xl border text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                            Boolean(formData.sourcePrice && formData.sourcePrice > 0)
+                              ? 'bg-indigo-500 text-white font-extrabold shadow-sm border-indigo-400'
+                              : 'bg-slate-900 text-slate-400 border-white/5 hover:text-white'
+                          }`}
+                        >
+                          <span>🔵 Paid Source Code (PKR)</span>
+                        </button>
+                      </div>
+
+                      {Boolean(formData.sourcePrice && formData.sourcePrice > 0) && (
+                        <div className="pt-2 flex items-center gap-2">
+                          <span className="text-xs font-mono text-slate-400">Source Price in PKR:</span>
+                          <input
+                            type="number"
+                            min={100}
+                            value={formData.sourcePrice ?? 3500}
+                            onChange={(e) => setFormData({ ...formData, sourcePrice: Number(e.target.value) })}
+                            placeholder="e.g. 3500"
+                            className="w-40 px-3 py-1.5 rounded-lg bg-slate-900 border border-white/10 text-white font-mono text-xs font-bold focus:border-indigo-500 focus:outline-none"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Source ZIP Download Link / Upload */}
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-mono text-slate-300 block">
+                        Source Code .ZIP Download URL (Google Drive, MediaFire, Mega, GitHub, or direct link):
+                      </label>
+                      <div className="relative">
+                        <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400" />
+                        <input
+                          type="url"
+                          value={formData.sourceZipUrl || ''}
+                          onChange={(e) => setFormData({ ...formData, sourceZipUrl: e.target.value })}
+                          placeholder="https://drive.google.com/file/... or https://mediafire.com/..."
+                          className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-indigo-500 focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                        {/* Direct File Upload Option */}
+                        <div className="flex items-center gap-2">
+                          <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white text-xs font-mono cursor-pointer transition-colors">
+                            <UploadCloud className="w-3.5 h-3.5 text-indigo-400" />
+                            <span>{sourceUploading ? `Uploading ZIP (${sourceUploadProgress}%)...` : 'Or Upload .ZIP File'}</span>
+                            <input
+                              type="file"
+                              accept=".zip,.rar,.tar.gz,.7z"
+                              onChange={handleSourceFileSelect}
+                              className="hidden"
+                              disabled={sourceUploading}
+                            />
+                          </label>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-mono text-slate-400">Archive Size:</span>
+                          <input
+                            type="text"
+                            value={formData.sourceSize || ''}
+                            onChange={(e) => setFormData({ ...formData, sourceSize: e.target.value })}
+                            placeholder="e.g. 42.5 MB"
+                            className="w-24 px-2 py-1 rounded bg-slate-900 border border-white/10 text-white text-[11px] font-mono focus:border-indigo-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {formData.sourceZipUrl && (
+                        <div className="p-2 rounded-lg bg-indigo-950/40 border border-indigo-500/20 text-indigo-300 text-[11px] font-mono flex items-center gap-2 truncate">
+                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+                          <span className="truncate">Source ZIP Link Set: {formData.sourceZipUrl}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Row 4: App Picture / Thumbnail (Auto-adjusts for 16:9, 1:1, or 9:16) */}
               <div className="p-4 rounded-2xl bg-[#070b14] border border-white/10 space-y-3">
                 <div className="flex items-center justify-between">
@@ -567,33 +749,31 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                 />
               </div>
 
-              {/* Row 7: Website Live Preview URL (Optional - only for websites) */}
-              <div className="border-t border-white/5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowWebsitePreviewInQuick(!showWebsitePreviewInQuick)}
-                  className="text-xs font-mono text-slate-400 hover:text-cyan-400 flex items-center gap-1.5 cursor-pointer transition-colors"
-                >
-                  <Globe className="w-3.5 h-3.5" />
-                  <span>
-                    {showWebsitePreviewInQuick ? 'Hide Website Preview Link' : 'Website Live Preview Link (Websites Only - Click to Add)'}
+              {/* Row 7: Website Live Preview URL */}
+              <div className="p-3.5 rounded-2xl bg-[#070b14] border border-cyan-500/25 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono text-cyan-300 font-bold flex items-center gap-1.5">
+                    <Globe className="w-4 h-4 text-cyan-400" />
+                    <span>Live Web Preview Link (For Websites & Web Apps)</span>
+                  </label>
+                  <span className="text-[10px] font-mono text-slate-400">
+                    {formData.category === 'Web Platform' ? 'Recommended for Web Platform' : 'Optional (Leave blank if none)'}
                   </span>
-                  {showWebsitePreviewInQuick ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                </button>
+                </div>
 
-                {showWebsitePreviewInQuick && (
-                  <div className="mt-2 p-3 rounded-xl bg-slate-900/80 border border-white/10 space-y-1">
-                    <label className="block text-[11px] font-mono text-slate-300">Live Website URL</label>
-                    <input
-                      type="url"
-                      value={formData.websitePreviewUrl || ''}
-                      onChange={(e) => setFormData({ ...formData, websitePreviewUrl: e.target.value })}
-                      placeholder="https://example.com"
-                      className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
-                    />
-                    <p className="text-[10px] text-slate-500">Leave blank for APKs. Only fill if this is a live website.</p>
-                  </div>
-                )}
+                <div className="relative">
+                  <ExternalLink className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-400" />
+                  <input
+                    type="url"
+                    value={formData.websitePreviewUrl || ''}
+                    onChange={(e) => setFormData({ ...formData, websitePreviewUrl: e.target.value })}
+                    placeholder="https://yourwebsite.com or live web demo link"
+                    className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400">
+                  When provided, users get a prominent "Live Web Preview" button to view the running website or app demo.
+                </p>
               </div>
 
               {/* Collapsible: Optional Additional Options (Features, Version, Status) */}
@@ -841,24 +1021,126 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
               )}
 
               {activeTab === 'source' && (
-                <div className="space-y-3">
-                  <label className="flex items-center gap-2 text-xs font-mono text-slate-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.sourceAvailable ?? false}
-                      onChange={(e) => setFormData({ ...formData, sourceAvailable: e.target.checked })}
-                    />
-                    <span>Source Code Available for Sale</span>
-                  </label>
-                  {formData.sourceAvailable && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-white/10">
                     <div>
-                      <label className="block text-xs font-mono text-slate-300 mb-1">Source Code Price (PKR)</label>
-                      <input
-                        type="number"
-                        value={formData.sourcePrice ?? 0}
-                        onChange={(e) => setFormData({ ...formData, sourcePrice: Number(e.target.value) })}
-                        className="w-40 px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-mono"
-                      />
+                      <span className="font-bold text-white text-xs font-mono block">Include Source Code Package (.ZIP)</span>
+                      <span className="text-[10px] text-slate-400">Enable to distribute repository & project files</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          sourceAvailable: !formData.sourceAvailable,
+                          isApkOnly: formData.category === 'Android App' && formData.sourceAvailable
+                        })
+                      }
+                      className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold border transition-all cursor-pointer ${
+                        formData.sourceAvailable
+                          ? 'bg-indigo-500 text-white border-indigo-400'
+                          : 'bg-slate-950 text-slate-400 border-white/10 hover:text-white'
+                      }`}
+                    >
+                      {formData.sourceAvailable ? '📦 Source: ON' : 'Source: OFF'}
+                    </button>
+                  </div>
+
+                  {formData.sourceAvailable && (
+                    <div className="p-4 rounded-2xl bg-slate-900/60 border border-indigo-500/30 space-y-3">
+                      <div>
+                        <label className="block text-xs font-mono text-slate-300 mb-1.5">Source Distribution Mode:</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, sourcePrice: 0 })}
+                            className={`py-1.5 px-3 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer ${
+                              formData.sourcePrice === 0 || !formData.sourcePrice
+                                ? 'bg-emerald-500 text-black border-emerald-400 font-extrabold'
+                                : 'bg-slate-950 text-slate-400 border-white/5'
+                            }`}
+                          >
+                            <span>🟢 Free Source (PKR 0)</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFormData({
+                                ...formData,
+                                sourcePrice: formData.sourcePrice && formData.sourcePrice > 0 ? formData.sourcePrice : 3500
+                              })
+                            }
+                            className={`py-1.5 px-3 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer ${
+                              Boolean(formData.sourcePrice && formData.sourcePrice > 0)
+                                ? 'bg-indigo-500 text-white border-indigo-400 font-extrabold'
+                                : 'bg-slate-950 text-slate-400 border-white/5'
+                            }`}
+                          >
+                            <span>🔵 Paid Source (PKR)</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {Boolean(formData.sourcePrice && formData.sourcePrice > 0) && (
+                        <div>
+                          <label className="block text-xs font-mono text-slate-300 mb-1">Source Code Price (PKR)</label>
+                          <input
+                            type="number"
+                            min={100}
+                            value={formData.sourcePrice ?? 3500}
+                            onChange={(e) => setFormData({ ...formData, sourcePrice: Number(e.target.value) })}
+                            className="w-44 px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-indigo-500 focus:outline-none"
+                          />
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-xs font-mono text-slate-300 mb-1">
+                          Source Code .ZIP Download URL (Drive / MediaFire / GitHub / Direct Link)
+                        </label>
+                        <div className="relative">
+                          <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400" />
+                          <input
+                            type="url"
+                            value={formData.sourceZipUrl || ''}
+                            onChange={(e) => setFormData({ ...formData, sourceZipUrl: e.target.value })}
+                            placeholder="https://..."
+                            className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-indigo-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white text-xs font-mono cursor-pointer transition-colors">
+                          <UploadCloud className="w-3.5 h-3.5 text-indigo-400" />
+                          <span>{sourceUploading ? `Uploading ZIP (${sourceUploadProgress}%)...` : 'Or Upload .ZIP File'}</span>
+                          <input
+                            type="file"
+                            accept=".zip,.rar,.tar.gz,.7z"
+                            onChange={handleSourceFileSelect}
+                            className="hidden"
+                            disabled={sourceUploading}
+                          />
+                        </label>
+
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-mono text-slate-400">Size:</span>
+                          <input
+                            type="text"
+                            value={formData.sourceSize || ''}
+                            onChange={(e) => setFormData({ ...formData, sourceSize: e.target.value })}
+                            placeholder="e.g. 45 MB"
+                            className="w-24 px-2 py-1 rounded bg-slate-950 border border-white/10 text-white text-[11px] font-mono focus:border-indigo-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {formData.sourceZipUrl && (
+                        <div className="p-2 rounded-lg bg-indigo-950/40 border border-indigo-500/20 text-indigo-300 text-[11px] font-mono flex items-center gap-2 truncate">
+                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+                          <span className="truncate">Source Link: {formData.sourceZipUrl}</span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

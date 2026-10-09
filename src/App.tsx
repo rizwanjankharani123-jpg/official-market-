@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/common/Navbar';
 import { Footer } from './components/common/Footer';
@@ -6,6 +6,7 @@ import { Footer } from './components/common/Footer';
 // Portfolio Sections
 import { HeroSection } from './components/portfolio/HeroSection';
 import { AboutSection } from './components/portfolio/AboutSection';
+import { Portfolio3DWorkstation } from './components/portfolio/Portfolio3DWorkstation';
 import { ProjectsSection } from './components/portfolio/ProjectsSection';
 import { ServicesSection } from './components/portfolio/ServicesSection';
 import { ContactSection } from './components/portfolio/ContactSection';
@@ -60,14 +61,14 @@ const MainAppContent: React.FC = () => {
     }
   });
 
-  const handleAnimationComplete = () => {
+  const handleAnimationComplete = useCallback(() => {
     try {
       sessionStorage.setItem('affy_opening_seen', 'true');
     } catch {
       // ignore
     }
     setShowOpeningAnimation(false);
-  };
+  }, []);
 
   // Modal States
   const [selectedProductForPurchase, setSelectedProductForPurchase] = useState<Product | null>(null);
@@ -421,6 +422,7 @@ const MainAppContent: React.FC = () => {
         {/* VIEW: FEATURED PORTFOLIO & DEVELOPER BIO */}
         {activeView === 'portfolio' && (
           <div className="pt-6 space-y-8">
+            <Portfolio3DWorkstation />
             <AboutSection />
             <ProjectsSection />
             <ServicesSection />

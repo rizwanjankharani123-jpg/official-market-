@@ -122,60 +122,71 @@ export const Contact3DExperience: React.FC<Contact3DExperienceProps> = ({
       // Contact Name & Title
       ctx.textAlign = 'left';
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 26px sans-serif';
-      ctx.fillText('Aftab Khan', 145, 268);
+      ctx.font = 'bold 28px sans-serif';
+      ctx.fillText('Aftab', 145, 268);
       ctx.fillStyle = '#10b981';
-      ctx.font = 'bold 18px monospace';
-      ctx.fillText('● LEAD ENGINEER / AFFY', 145, 296);
+      ctx.font = 'bold 16px monospace';
+      ctx.fillText('● LEAD ENGINEER / AFFY OFFICIAL', 145, 296);
 
-      // Direct WhatsApp highlight
+      // Direct WhatsApp & Email highlights
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 16px monospace';
+      ctx.fillText('+92 326 3724861', 65, 355);
       ctx.fillStyle = '#94a3b8';
-      ctx.font = '16px monospace';
-      ctx.fillText('+92 326 3724861', 65, 360);
+      ctx.font = '15px monospace';
       ctx.fillText('affyofficial.dev@gmail.com', 65, 385);
 
       // Chat Messages Flow
-      // Incoming bubble from user
-      ctx.fillStyle = 'rgba(30, 41, 59, 0.9)';
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      // Incoming bubble from Client
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+      ctx.strokeStyle = 'rgba(0, 242, 254, 0.25)';
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.roundRect(40, 440, 340, 90, 16);
+      ctx.roundRect(35, 435, 380, 100, 18);
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = '#cbd5e1';
-      ctx.font = '18px sans-serif';
-      ctx.fillText('Inquiry: Custom APK / Web App', 60, 480);
-      ctx.fillStyle = '#64748b';
-      ctx.font = '14px monospace';
-      ctx.fillText('Direct Consultation Request', 60, 508);
 
-      // Outgoing Transmission Bubble with "Message Delivered"
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 14px monospace';
+      ctx.fillText('CLIENT INQUIRY', 55, 465);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 17px sans-serif';
+      ctx.fillText('Salam Aftab bhai! Need a custom', 55, 492);
+      ctx.fillText('Mobile APK & Web Platform built.', 55, 516);
+
+      // Outgoing Transmission Bubble from Aftab
       const outBubbleY = 560;
-      ctx.fillStyle = delivered ? 'rgba(16, 185, 129, 0.2)' : 'rgba(6, 182, 212, 0.15)';
+      ctx.fillStyle = delivered ? 'rgba(6, 78, 59, 0.45)' : 'rgba(8, 47, 73, 0.45)';
       ctx.strokeStyle = delivered ? '#10b981' : '#00f2fe';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.roundRect(132, outBubbleY, 340, 120, 16);
+      ctx.roundRect(95, outBubbleY, 385, 140, 18);
       ctx.fill();
       ctx.stroke();
 
+      ctx.fillStyle = delivered ? '#34d399' : '#38bdf8';
+      ctx.font = 'bold 15px monospace';
+      ctx.fillText('AFTAB (AFFY OFFICIAL)', 115, outBubbleY + 35);
+
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 20px sans-serif';
-      ctx.fillText('Encrypted Transmission', 152, outBubbleY + 40);
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillText("Connected! Requirements received.", 115, outBubbleY + 65);
+      ctx.fillText("Let's build something extraordinary! 🚀", 115, outBubbleY + 90);
 
       // Pulsing Transmission / Delivered Status
       if (delivered) {
         ctx.fillStyle = '#10b981';
-        ctx.font = 'bold 22px monospace';
+        ctx.font = 'bold 20px monospace';
         ctx.shadowColor = '#10b981';
-        ctx.shadowBlur = 10;
-        ctx.fillText('✓✓ MESSAGE DELIVERED', 152, outBubbleY + 80);
+        ctx.shadowBlur = 12;
+        ctx.fillText('✓✓ MESSAGE DELIVERED & READ', 115, outBubbleY + 120);
         ctx.shadowBlur = 0;
       } else {
-        const dots = '.'.repeat(Math.floor(phase * 4) % 4 + 1);
+        const dots = '.'.repeat((Math.floor(phase * 4) % 4) + 1);
         ctx.fillStyle = '#00f2fe';
-        ctx.font = 'bold 20px monospace';
-        ctx.fillText(`TRANSMITTING${dots}`, 152, outBubbleY + 80);
+        ctx.font = 'bold 18px monospace';
+        ctx.fillText(`TRANSMITTING TO AFTAB${dots}`, 115, outBubbleY + 120);
       }
 
       // Signal radar wave at bottom

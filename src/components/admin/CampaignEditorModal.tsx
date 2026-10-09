@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CampaignEvent, CampaignStatus, Product } from '../../types';
 import {
   X,
@@ -25,8 +25,6 @@ export const CampaignEditorModal: React.FC<CampaignEditorModalProps> = ({
   onClose,
   onSave
 }) => {
-  if (!isOpen) return null;
-
   const { products, giveaways } = useApp();
 
   const [formData, setFormData] = useState<Partial<CampaignEvent>>({
@@ -46,6 +44,28 @@ export const CampaignEditorModal: React.FC<CampaignEditorModalProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        campaignName: campaign?.campaignName || '',
+        title: campaign?.title || '',
+        description: campaign?.description || '',
+        bannerImage: campaign?.bannerImage || '',
+        startDate: campaign?.startDate || new Date().toISOString().split('T')[0],
+        endDate: campaign?.endDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        featuredProductIds: campaign?.featuredProductIds || [],
+        discountPercentage: campaign?.discountPercentage || 25,
+        offerDescription: campaign?.offerDescription || '',
+        giveawayId: campaign?.giveawayId || '',
+        status: campaign?.status || 'live',
+        ...campaign
+      });
+      setErrorMessage('');
+    }
+  }, [isOpen, campaign]);
+
+  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

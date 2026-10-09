@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Product } from '../../types';
 import {
   X,
@@ -30,14 +30,24 @@ export const VersionReleaseModal: React.FC<VersionReleaseModalProps> = ({
   onClose,
   onPublishVersion
 }) => {
-  if (!isOpen || !product) return null;
-
-  const [version, setVersion] = useState(product.version || 'v1.1.0');
+  const [version, setVersion] = useState(product?.version || 'v1.1.0');
   const [releaseNotes, setReleaseNotes] = useState('');
-  const [apkUrl, setApkUrl] = useState(product.apkUrl || '');
-  const [sourceZipUrl, setSourceZipUrl] = useState(product.sourceZipUrl || '');
+  const [apkUrl, setApkUrl] = useState(product?.apkUrl || '');
+  const [sourceZipUrl, setSourceZipUrl] = useState(product?.sourceZipUrl || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (isOpen && product) {
+      setVersion(product.version || 'v1.1.0');
+      setReleaseNotes('');
+      setApkUrl(product.apkUrl || '');
+      setSourceZipUrl(product.sourceZipUrl || '');
+      setErrorMessage('');
+    }
+  }, [isOpen, product]);
+
+  if (!isOpen || !product) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

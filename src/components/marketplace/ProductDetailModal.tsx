@@ -43,6 +43,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 }) => {
   const { getProductSalesStats, recordFreeDownload, recordProductView, toggleWishlist, isInWishlist } = useApp();
   const [downloadingFree, setDownloadingFree] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  // Reset active image index when product changes
+  useEffect(() => {
+    setActiveImageIndex(0);
+  }, [product?.id]);
 
   // Record product view on open (with built-in deduplication per session)
   useEffect(() => {
@@ -54,7 +60,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   if (!product) return null;
 
   const isFree = product.pricingType === 'free' || product.price === 0;
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const totalSales = getProductSalesStats(product.id);
   const softwareSales = getProductSalesStats(product.id, 'software');
   const sourceSales = getProductSalesStats(product.id, 'source_code');
@@ -457,38 +462,80 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               )}
             </div>
 
-            {/* Option B: Buy Source Code License */}
+            {/* Option B: Source Code License (Free or Paid) */}
             {product.sourceAvailable && (
               <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-950/40 to-slate-900 border border-indigo-500/30 space-y-4 shadow-xl">
                 <div className="flex items-start justify-between">
                   <div>
-                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 font-bold">
-                      OPTION 2 • DEVELOPER SOURCE
+                    <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold ${
+                      (product.sourcePrice === 0 || !product.sourcePrice)
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                    }`}>
+                      {(product.sourcePrice === 0 || !product.sourcePrice) ? 'OPTION 2 • FREE SOURCE CODE' : 'OPTION 2 • DEVELOPER SOURCE'}
                     </span>
-                    <h4 className="font-bold text-white text-base mt-1">Full Source Code License</h4>
-                    <p className="text-[11px] text-slate-400">Complete repo, database schema, and docs.</p>
-                    <p className="text-[10px] font-mono text-indigo-300/80 mt-1">Sold: {sourceSales.sold} • Pending: {sourceSales.pending}</p>
+                    <h4 className="font-bold text-white text-base mt-1 flex items-center gap-1.5">
+                      <Code2 className="w-4 h-4 text-indigo-400" />
+                      <span>{(product.sourcePrice === 0 || !product.sourcePrice) ? 'Free Source Code (.ZIP)' : 'Full Source Code License'}</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-400">Complete repository, database schema, and project files.</p>
+                    {product.sourceSize && (
+                      <p className="text-[10px] font-mono text-cyan-300 mt-0.5">Archive Size: {product.sourceSize}</p>
+                    )}
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-2xl font-black text-white font-mono">PKR {(product.sourcePrice || product.price).toLocaleString()}</p>
+                    {(product.sourcePrice === 0 || !product.sourcePrice) ? (
+                      <p className="text-2xl font-black text-emerald-400 font-mono">
+                        PKR 0 <span className="text-xs font-normal text-slate-400 font-sans">/ Free</span>
+                      </p>
+                    ) : (
+                      <p className="text-2xl font-black text-white font-mono">
+                        PKR {product.sourcePrice.toLocaleString()}
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 <div className="space-y-1 text-[11px] text-slate-300">
-                  <p className="font-mono text-cyan-300">Tech: {product.techStack?.join(', ')}</p>
-                  <p className="text-slate-400">{product.licenseTerms}</p>
+                  {product.techStack && product.techStack.length > 0 && (
+                    <p className="font-mono text-cyan-300">Tech: {product.techStack.join(', ')}</p>
+                  )}
+                  {product.licenseTerms && (
+                    <p className="text-slate-400">{product.licenseTerms}</p>
+                  )}
                 </div>
 
-                <button
-                  onClick={() => {
-                    onClose();
-                    onSelectProduct(product, 'source_code');
-                  }}
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:brightness-110 text-white font-extrabold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 btn-shimmer cursor-pointer active:scale-95"
-                >
-                  <Code2 className="w-4 h-4 text-white" />
-                  <span>Buy Source Code (PKR {(product.sourcePrice || product.price).toLocaleString()})</span>
-                </button>
+                {(product.sourcePrice === 0 || !product.sourcePrice) ? (
+                  <button
+                    onClick={() => {
+                      if (product.sourceZipUrl) {
+                        const a = document.createElement('a');
+                        a.href = product.sourceZipUrl;
+                        a.download = `${product.name.replace(/\s+/g, '_')}_Source.zip`;
+                        a.target = '_blank';
+                        a.rel = 'noopener noreferrer';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                      }
+                    }}
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:brightness-110 text-black font-extrabold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 btn-shimmer cursor-pointer active:scale-95"
+                  >
+                    <DownloadCloud className="w-4 h-4 text-black" />
+                    <span>Download Free Source Code (.ZIP)</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onSelectProduct(product, 'source_code');
+                    }}
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:brightness-110 text-white font-extrabold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 btn-shimmer cursor-pointer active:scale-95"
+                  >
+                    <Code2 className="w-4 h-4 text-white" />
+                    <span>Buy Source Code (PKR {product.sourcePrice.toLocaleString()})</span>
+                  </button>
+                )}
               </div>
             )}
 
