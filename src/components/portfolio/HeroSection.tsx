@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
+import { Hero3DSoftwareCanvas } from '../common/Hero3DSoftwareCanvas';
 import {
   Smartphone,
   Package,
@@ -36,9 +37,12 @@ export const HeroSection: React.FC = () => {
       <div className="absolute top-40 right-10 w-80 h-80 bg-emerald-500/10 blur-3xl rounded-full pointer-events-none" />
 
       {/* Main Storefront Hero Banner */}
-      <div className="relative rounded-3xl bg-gradient-to-b from-[#0c1427] via-[#090d16] to-[#07090e] border border-cyan-500/30 p-6 sm:p-10 shadow-2xl shadow-cyan-950/50 overflow-hidden">
+      <div className="relative rounded-3xl bg-gradient-to-b from-[#0c1427]/90 via-[#090d16]/95 to-[#07090e] border border-cyan-500/40 p-6 sm:p-10 shadow-2xl shadow-cyan-950/60 overflow-hidden backdrop-blur-sm">
+        {/* Immersive 3D Software & APK Ecosystem WebGL Canvas */}
+        <Hero3DSoftwareCanvas />
+
         {/* Subtle top accent line */}
-        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-500" />
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-500 z-10" />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
           {/* Left Column: Storefront Headlines & Search / Actions */}

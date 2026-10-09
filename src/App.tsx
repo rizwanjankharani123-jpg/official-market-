@@ -384,7 +384,7 @@ const MainAppContent: React.FC = () => {
         {activeView === 'about' && (
           <div className="pt-6">
             <AboutSection />
-            <ContactSection />
+            <ContactSection autoPlay3D={false} />
           </div>
         )}
 
@@ -424,7 +424,7 @@ const MainAppContent: React.FC = () => {
             <AboutSection />
             <ProjectsSection />
             <ServicesSection />
-            <ContactSection />
+            <ContactSection autoPlay3D={false} />
           </div>
         )}
 
@@ -464,7 +464,7 @@ const MainAppContent: React.FC = () => {
         {/* VIEW: OFFICIAL CONTACT */}
         {activeView === 'contact' && (
           <div className="pt-6">
-            <ContactSection />
+            <ContactSection autoPlay3D={true} />
           </div>
         )}
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { Contact3DExperience } from '../common/Contact3DExperience';
 import {
   Mail,
   MessageSquare,
@@ -9,11 +10,18 @@ import {
   Sparkles,
   Terminal,
   ShieldCheck,
-  ExternalLink
+  ExternalLink,
+  Smartphone,
+  Play
 } from 'lucide-react';
 
-export const ContactSection: React.FC = () => {
+export interface ContactSectionProps {
+  autoPlay3D?: boolean;
+}
+
+export const ContactSection: React.FC<ContactSectionProps> = ({ autoPlay3D = true }) => {
   const { settings, submitCustomRequest } = useApp();
+  const [show3DExperience, setShow3DExperience] = useState(autoPlay3D);
   const [formSent, setFormSent] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -46,20 +54,41 @@ export const ContactSection: React.FC = () => {
   };
 
   return (
-    <section id="contact" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-white/5">
-      {/* Section Header */}
-      <div className="space-y-3 mb-12 text-left">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-xs font-mono">
-          <Terminal className="w-3.5 h-3.5" />
-          <span>OFFICIAL COMMUNICATION CHANNELS</span>
+    <>
+      {/* 3D Realistic VFX Mobile & Message Transmission Intro */}
+      {show3DExperience && (
+        <Contact3DExperience
+          onComplete={() => setShow3DExperience(false)}
+          onClose={() => setShow3DExperience(false)}
+        />
+      )}
+
+      <section id="contact" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-white/5 relative">
+        {/* Section Header & Replay 3D Intro Button */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-12">
+          <div className="space-y-3 text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-xs font-mono">
+              <Terminal className="w-3.5 h-3.5" />
+              <span>OFFICIAL COMMUNICATION CHANNELS</span>
+            </div>
+            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+              Contact <span className="text-cyan-400">Aftab</span> — AFFY OFFICIAL
+            </h2>
+            <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed">
+              These are the <strong className="text-white">only verified official contact channels</strong> for Aftab and AFFY OFFICIAL. Connect directly via WhatsApp, join the official broadcast channel for releases, or send an official email.
+            </p>
+          </div>
+
+          {/* Interactive Replay 3D Animation Button */}
+          <button
+            onClick={() => setShow3DExperience(true)}
+            className="self-start sm:self-center px-4 py-2.5 rounded-2xl bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 hover:text-white text-xs font-mono font-bold flex items-center gap-2.5 transition-all shadow-lg shadow-cyan-950/40 cursor-pointer active:scale-95"
+            title="Replay 3D Mobile VFX Intro"
+          >
+            <Smartphone className="w-4 h-4 text-cyan-400 animate-pulse" />
+            <span>3D موبائل اینیمیشن دوبارہ دیکھیں (Replay 3D)</span>
+          </button>
         </div>
-        <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-          Contact <span className="text-cyan-400">Aftab</span> — AFFY OFFICIAL
-        </h2>
-        <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed">
-          These are the <strong className="text-white">only verified official contact channels</strong> for Aftab and AFFY OFFICIAL. Connect directly via WhatsApp, join the official broadcast channel for releases, or send an official email.
-        </p>
-      </div>
 
       {/* EXACT THREE OFFICIAL CONTACT CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-14">
@@ -228,5 +257,6 @@ export const ContactSection: React.FC = () => {
         )}
       </div>
     </section>
+    </>
   );
 };
