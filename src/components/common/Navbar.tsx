@@ -43,6 +43,7 @@ export const Navbar: React.FC = () => {
     unreadAnnouncementsCount,
     currentUser,
     userProfile,
+    myOrders,
     setIsUserAuthModalOpen,
     userSignOut
   } = useApp();
@@ -351,65 +352,82 @@ export const Navbar: React.FC = () => {
               )}
             </button>
 
-            {/* My Vault / Library Button */}
+            {/* My Orders & APK Vault Dashboard Button */}
             <button
-              onClick={() => handleNavClick('library')}
-              className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono border transition-all cursor-pointer ${
-                activeView === 'library'
+              onClick={() => handleNavClick('my-dashboard')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono border transition-all cursor-pointer ${
+                activeView === 'my-dashboard' || activeView === 'library'
                   ? 'bg-cyan-500 text-black border-cyan-400 font-bold shadow-md shadow-cyan-500/20'
-                  : 'bg-slate-900/80 text-slate-300 border-white/10 hover:border-cyan-500/40 hover:text-white'
+                  : 'bg-slate-900/80 text-cyan-300 border-cyan-500/30 hover:border-cyan-400 hover:text-white'
               }`}
+              title="View Your Orders & Paid APK Downloads"
             >
               <FolderArchive className="w-3.5 h-3.5" />
-              <span>My Vault</span>
+              <span className="hidden sm:inline">My Orders</span>
+              {myOrders.length > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-emerald-500 text-black font-black text-[10px]">
+                  {myOrders.length}
+                </span>
+              )}
             </button>
 
-            {/* Customer Authentication & Account Profile */}
+            {/* Customer Name Profile & Quick Menu */}
             <div className="relative" ref={userDropdownRef}>
-              {currentUser ? (
+              {userProfile?.displayName ? (
                 <button
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20 transition-all cursor-pointer"
-                  title="My Account"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20 transition-all cursor-pointer"
+                  title="Your Browser Profile"
                 >
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                   <span className="font-bold max-w-[90px] sm:max-w-[120px] truncate">
-                    {userProfile?.displayName || currentUser.displayName || currentUser.email?.split('@')[0] || 'Account'}
+                    {userProfile.displayName}
                   </span>
                   <ChevronDown className={`w-3 h-3 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
               ) : (
                 <button
                   onClick={() => setIsUserAuthModalOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono bg-slate-900/90 border border-white/10 hover:border-cyan-500/40 text-slate-300 hover:text-white transition-all cursor-pointer"
-                  title="Sign In / Register"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono bg-slate-900/90 border border-cyan-500/30 hover:border-cyan-400 text-cyan-300 hover:text-white transition-all cursor-pointer"
+                  title="Create Profile by Name"
                 >
                   <User className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Sign In</span>
+                  <span>Set Profile</span>
                 </button>
               )}
 
-              {/* User Dropdown Menu */}
-              {currentUser && userDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-[#090d16] border border-cyan-500/30 p-2 shadow-2xl shadow-cyan-950/70 space-y-1 z-50 text-left animate-in fade-in zoom-in-95 duration-150">
+              {/* User Profile Dropdown Menu */}
+              {userProfile?.displayName && userDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-60 rounded-2xl bg-[#090d16] border border-cyan-500/30 p-2 shadow-2xl shadow-cyan-950/70 space-y-1 z-50 text-left animate-in fade-in zoom-in-95 duration-150">
                   <div className="px-3 py-2 border-b border-white/10 space-y-0.5">
                     <p className="text-xs font-bold text-white truncate font-mono">
-                      {userProfile?.displayName || currentUser.displayName || 'Customer'}
+                      {userProfile.displayName}
                     </p>
-                    <p className="text-[10px] text-slate-400 truncate font-mono">
-                      {currentUser.email}
+                    <p className="text-[10px] text-emerald-400 truncate font-mono">
+                      Private Browser Profile • {myOrders.length} Orders
                     </p>
                   </div>
 
                   <button
                     onClick={() => {
                       setUserDropdownOpen(false);
-                      handleNavClick('library');
+                      handleNavClick('my-dashboard');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-slate-200 hover:bg-slate-800 hover:text-cyan-300 text-left font-mono font-bold transition-colors cursor-pointer"
+                  >
+                    <FolderArchive className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>My Orders & Paid APKs</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setUserDropdownOpen(false);
+                      setIsUserAuthModalOpen(true);
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-800 hover:text-white text-left font-mono transition-colors cursor-pointer"
                   >
-                    <FolderArchive className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>My Orders & APKs</span>
+                    <User className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Edit Profile Name</span>
                   </button>
 
                   <button
@@ -419,19 +437,8 @@ export const Navbar: React.FC = () => {
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-800 hover:text-white text-left font-mono transition-colors cursor-pointer"
                   >
-                    <Search className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Track Order TRX</span>
-                  </button>
-
-                  <button
-                    onClick={async () => {
-                      setUserDropdownOpen(false);
-                      await userSignOut();
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-red-400 hover:bg-red-500/10 text-left font-mono transition-colors cursor-pointer border-t border-white/5 mt-1"
-                  >
-                    <X className="w-3.5 h-3.5 text-red-400" />
-                    <span>Sign Out</span>
+                    <Search className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Track Order by ID</span>
                   </button>
                 </div>
               )}

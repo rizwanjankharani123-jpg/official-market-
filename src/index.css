@@ -73,23 +73,79 @@
   background: #334155;
 }
 
-/* Print utility for high-fidelity certificate & invoice export */
+/* Default hidden state for print-only elements on screen */
+.print-only,
+.print-only-flex {
+  display: none;
+}
+
+/* Print utility for high-fidelity certificate & invoice export via window.print() */
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm;
+  }
+
+  html,
   body {
     background: #ffffff !important;
     color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    overflow: visible !important;
+    height: auto !important;
   }
+
   .no-print {
     display: none !important;
   }
+
   .print-only {
     display: block !important;
   }
-  .print-card {
-    border: 1px solid #ddd !important;
+
+  .print-only-flex {
+    display: flex !important;
+  }
+
+  .print-modal-backdrop {
+    position: static !important;
+    inset: auto !important;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  .print-modal-shell {
+    position: static !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
     box-shadow: none !important;
-    background: white !important;
-    color: black !important;
+    background: transparent !important;
+    overflow: visible !important;
+  }
+
+  .print-scroll-reset {
+    overflow: visible !important;
+    max-height: none !important;
+    padding: 0 !important;
+  }
+
+  .print-card {
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border-radius: 12px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }
 

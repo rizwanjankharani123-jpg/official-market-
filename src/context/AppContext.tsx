@@ -91,12 +91,17 @@ interface AppContextType {
   isAdminAuthenticated: boolean;
   adminLogin: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   adminLogout: () => Promise<void>;
-  // Customer Firebase Auth & Vault
+  // Customer Profile & Browser-Isolated Orders Vault
+  browserClientId: string;
   currentUser: User | null;
   userProfile: UserAccount | null;
+  myOrders: Order[];
   isUserAuthLoading: boolean;
   isUserAuthModalOpen: boolean;
   setIsUserAuthModalOpen: (open: boolean) => void;
+  saveCustomerProfile: (name: string, phone?: string, email?: string) => Promise<void>;
+  linkOrderToMyBrowser: (orderId: string) => boolean;
+  refreshOrdersFromFirestore: () => Promise<void>;
   userSignUp: (email: string, pass: string, name: string) => Promise<void>;
   userSignIn: (email: string, pass: string) => Promise<void>;
   userSignInWithGoogle: () => Promise<void>;
@@ -254,98 +259,89 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return null;
   });
 
-  // Customer Firebase Auth States
+  // Unique Per-Browser Client Token (Strict browser isolation so another user's purchase never shows here)
+  const [browserClientId] = useState<string>(() => {
+    const existing = loadFromLocal<string>('browser_client_id', '');
+    if (existing && existing.trim()) return existing;
+    const generated = `affy_client_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+    saveToLocal('browser_client_id', generated);
+    return generated;
+  });
+
+  // Track Order IDs created or claimed in THIS browser
+  const [myBrowserOrderIds, setMyBrowserOrderIds] = useState<string[]>(() =>
+    loadFromLocal<string[]>('affy_recent_order_ids', [])
+  );
+
+  // Customer Name-Based Profile State (No password/auth barrier required)
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [userProfile, setUserProfile] = useState<UserAccount | null>(null);
-  const [isUserAuthLoading, setIsUserAuthLoading] = useState<boolean>(true);
+  const [userProfile, setUserProfile] = useState<UserAccount | null>(() =>
+    loadFromLocal<UserAccount | null>('customer_profile', null)
+  );
+  const [isUserAuthLoading, setIsUserAuthLoading] = useState<boolean>(false);
   const [isUserAuthModalOpen, setIsUserAuthModalOpen] = useState<boolean>(false);
 
-  // Synchronize Firebase Auth for Customers
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      setIsUserAuthLoading(false);
-      if (user) {
-        try {
-          const userDocRef = doc(db, 'users', user.uid);
-          const snap = await getDoc(userDocRef);
-          if (snap.exists()) {
-            setUserProfile(snap.data() as UserAccount);
-          } else {
-            const profile: UserAccount = {
-              uid: user.uid,
-              email: user.email || '',
-              displayName: user.displayName || user.email?.split('@')[0] || 'Customer',
-              photoURL: user.photoURL || '',
-              createdAt: new Date().toISOString()
-            };
-            await setDoc(userDocRef, profile);
-            setUserProfile(profile);
-          }
-        } catch (err) {
-          console.warn('Customer profile sync notice:', err);
-          setUserProfile({
-            uid: user.uid,
-            email: user.email || '',
-            displayName: user.displayName || user.email?.split('@')[0] || 'Customer',
-            photoURL: user.photoURL || ''
-          });
-        }
-      } else {
-        setUserProfile(null);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  // Customer Auth Actions
-  const userSignUp = async (email: string, pass: string, name: string) => {
-    const cred = await createUserWithEmailAndPassword(auth, email, pass);
-    if (name.trim()) {
-      await updateProfile(cred.user, { displayName: name.trim() });
-    }
+  // Save or update Customer Profile by Name
+  const saveCustomerProfile = async (name: string, phone?: string, email?: string) => {
+    const cleanName = name.trim();
+    if (!cleanName) return;
     const profile: UserAccount = {
-      uid: cred.user.uid,
-      email: cred.user.email || email,
-      displayName: name.trim() || email.split('@')[0],
-      createdAt: new Date().toISOString()
+      uid: browserClientId,
+      displayName: cleanName,
+      phone: (phone !== undefined ? phone : userProfile?.phone || '').trim(),
+      email: (
+        email !== undefined && email.trim()
+          ? email.trim()
+          : userProfile?.email || `${cleanName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user'}@profile.affyofficial.dev`
+      ),
+      createdAt: userProfile?.createdAt || new Date().toISOString()
     };
-    try {
-      await setDoc(doc(db, 'users', cred.user.uid), profile);
-    } catch (e) {
-      console.warn('Save user doc fallback:', e);
-    }
     setUserProfile(profile);
+    saveToLocal('customer_profile', profile);
+    try {
+      await setDoc(doc(db, 'users', browserClientId), cleanForFirestore(profile), { merge: true });
+    } catch (e) {
+      console.warn('Customer profile cloud sync fallback:', e);
+    }
   };
 
-  const userSignIn = async (email: string, pass: string) => {
-    await signInWithEmailAndPassword(auth, email, pass);
+  // Allow user to link an existing Order ID to their browser if they know their exact Order ID
+  const linkOrderToMyBrowser = (orderIdInput: string): boolean => {
+    const cleanId = orderIdInput.trim().toUpperCase();
+    const found = orders.find(o => o.id.toUpperCase() === cleanId);
+    if (!found) return false;
+    const updatedIds = [found.id, ...myBrowserOrderIds.filter(id => id !== found.id)];
+    setMyBrowserOrderIds(updatedIds);
+    saveToLocal('affy_recent_order_ids', updatedIds);
+    return true;
+  };
+
+  // Legacy wrappers so any existing callers work seamlessly with Name Profile
+  const userSignUp = async (email: string, _pass: string, name: string) => {
+    await saveCustomerProfile(name || email.split('@')[0], '', email);
+  };
+
+  const userSignIn = async (email: string, _pass: string) => {
+    await saveCustomerProfile(userProfile?.displayName || email.split('@')[0], '', email);
   };
 
   const userSignInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-    const profile: UserAccount = {
-      uid: user.uid,
-      email: user.email || '',
-      displayName: user.displayName || user.email?.split('@')[0] || 'Customer',
-      photoURL: user.photoURL || '',
-      createdAt: new Date().toISOString()
-    };
     try {
-      await setDoc(doc(db, 'users', user.uid), profile);
-    } catch (e) {
-      console.warn('Google user sync fallback:', e);
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      await saveCustomerProfile(user.displayName || 'VIP Customer', '', user.email || '');
+    } catch {
+      // Fallback if popup blocked
     }
-    setUserProfile(profile);
   };
 
   const userSignOut = async () => {
-    await signOut(auth);
-    setCurrentUser(null);
     setUserProfile(null);
+    saveToLocal('customer_profile', null);
+    try {
+      await signOut(auth);
+    } catch {}
   };
 
   // Keep local storage updated for persistent items
@@ -1358,24 +1354,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const newOrder: Order = {
       id: orderId,
-      userId: currentUser?.uid || '',
-      customerUid: currentUser?.uid || '',
-      customerName: data.customerName,
-      customerEmail: data.customerEmail,
-      customerPhone: data.customerPhone,
-      customerNote: data.customerNote,
+      browserClientId,
+      userId: browserClientId,
+      customerUid: browserClientId,
+      customerName: data.customerName.trim(),
+      customerEmail: (data.customerEmail || userProfile?.email || 'customer@affyofficial.dev').trim(),
+      customerPhone: (data.customerPhone || userProfile?.phone || '').trim(),
+      customerNote: (data.customerNote || '').trim(),
       productId: data.productId,
       productName: data.productName,
-      bundleId: data.bundleId,
-      bundleName: data.bundleName,
-      includedProductIds: data.includedProductIds,
+      ...(data.bundleId ? { bundleId: data.bundleId } : {}),
+      ...(data.bundleName ? { bundleName: data.bundleName } : {}),
+      ...(data.includedProductIds ? { includedProductIds: data.includedProductIds } : {}),
       purchaseType: data.purchaseType,
       purchasedVersion,
       amount: data.amount,
-      currency: data.currency,
+      currency: data.currency || 'PKR',
       paymentMethodId: data.paymentMethodId,
       paymentMethodName: data.paymentMethodName,
-      transactionId: data.transactionId,
+      transactionId: data.transactionId.trim(),
       paymentProofUrl: data.paymentProofUrl || '',
       status: 'proof_submitted',
       downloadAccessGranted: false,
@@ -1388,62 +1385,92 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatedAt: now
     };
 
+    // Auto-create or sync Customer Profile with their Name if not already set
+    if (data.customerName.trim() && (!userProfile || !userProfile.displayName)) {
+      saveCustomerProfile(data.customerName.trim(), data.customerPhone, data.customerEmail);
+    }
+
     // Update state immediately
     setOrders(prev => [newOrder, ...prev.filter(o => o.id !== newOrder.id)]);
 
-    // Store recent order ID in local storage for guest session reference
+    // Store order ID in THIS browser's private list so only this browser owns it
     try {
       const recents = loadFromLocal<string[]>('affy_recent_order_ids', []);
-      saveToLocal('affy_recent_order_ids', [newOrder.id, ...recents.filter(id => id !== newOrder.id)]);
+      const updatedIds = [newOrder.id, ...recents.filter(id => id !== newOrder.id)];
+      setMyBrowserOrderIds(updatedIds);
+      saveToLocal('affy_recent_order_ids', updatedIds);
     } catch {}
 
-    // Persist to Firestore with resilience and error handling
+    // Persist to Firestore with cleanForFirestore so NO undefined fields ever block Admin Panel sync!
+    const sanitizedOrder = cleanForFirestore(newOrder);
     try {
-      await setDoc(doc(db, 'orders', orderId), newOrder);
-      console.log('✓ Order written to Firestore orders collection:', orderId);
+      await setDoc(doc(db, 'orders', orderId), sanitizedOrder);
+      console.log('✓ Order written to Firestore orders collection for Admin Panel:', orderId);
     } catch (e: any) {
       console.error('Firestore order write error:', e);
-      // If error was document size limit due to large proof image, save without the heavy string
-      if (e?.message && e.message.includes('maximum allowed size')) {
-        try {
-          const trimmedOrder = { ...newOrder, paymentProofUrl: '' };
-          await setDoc(doc(db, 'orders', orderId), trimmedOrder);
-          console.log('✓ Saved trimmed order to Firestore after size limit catch:', orderId);
-        } catch (innerErr) {
-          console.error('Firestore fallback retry failed:', innerErr);
-        }
+      // Fallback if proof screenshot exceeded 1MB Firestore doc limit
+      try {
+        const trimmedOrder = cleanForFirestore({ ...newOrder, paymentProofUrl: '' });
+        await setDoc(doc(db, 'orders', orderId), trimmedOrder);
+        console.log('✓ Saved trimmed order to Firestore after size limit catch:', orderId);
+      } catch (innerErr) {
+        console.error('Firestore fallback retry failed:', innerErr);
       }
     }
 
     return newOrder;
   };
 
+  // Manual force sync from Firestore for Admin Panel & User Dashboard
+  const refreshOrdersFromFirestore = useCallback(async () => {
+    try {
+      const snap = await getDocs(collection(db, 'orders'));
+      const firestoreList = snap.docs.map(d => ({ ...d.data(), id: d.id } as Order));
+      setOrders(prev => {
+        const map = new Map<string, Order>();
+        firestoreList.forEach(o => map.set(o.id, o));
+        prev.forEach(o => {
+          if (!map.has(o.id)) map.set(o.id, o);
+        });
+        return Array.from(map.values()).sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      });
+    } catch (e) {
+      console.warn('Manual orders refresh error:', e);
+    }
+  }, []);
+
+  // Strictly isolated orders belonging ONLY to this browser
+  const myOrders = React.useMemo(() => {
+    const recentIds = loadFromLocal<string[]>('affy_recent_order_ids', myBrowserOrderIds);
+    return orders
+      .filter(o => {
+        if (o.browserClientId && o.browserClientId === browserClientId) return true;
+        if (o.userId && o.userId === browserClientId) return true;
+        if (recentIds.includes(o.id) || myBrowserOrderIds.includes(o.id)) return true;
+        return false;
+      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [orders, browserClientId, myBrowserOrderIds]);
+
+  // Strictly isolated product order check: ONLY matches orders placed from THIS browser
   const getUserOrderForProduct = useCallback((productId: string): Order | undefined => {
-    const userEmail = currentUser?.email?.toLowerCase();
-    const userUid = currentUser?.uid;
-
-    const matching = orders.filter(o => {
-      const matchProduct = o.productId === productId || (o.includedProductIds && o.includedProductIds.includes(productId));
-      if (!matchProduct) return false;
-
-      if (userUid && (o.userId === userUid || o.customerUid === userUid)) return true;
-      if (userEmail && o.customerEmail && o.customerEmail.toLowerCase() === userEmail) return true;
-
-      // Check guest stored order IDs
-      const recentIds = loadFromLocal<string[]>('affy_recent_order_ids', []);
-      if (recentIds.includes(o.id)) return true;
-
-      return false;
+    const matching = myOrders.filter(o => {
+      return o.productId === productId || (o.includedProductIds && o.includedProductIds.includes(productId));
     });
 
     if (matching.length === 0) return undefined;
 
-    // Prioritize confirmed orders first, then pending orders
+    // Prioritize confirmed/approved orders first, then pending orders, then rejected
     const confirmed = matching.find(o => o.status === 'payment_confirmed' || o.status === 'completed');
     if (confirmed) return confirmed;
 
+    const pending = matching.find(o => o.status === 'proof_submitted' || o.status === 'under_review' || o.status === 'payment_pending');
+    if (pending) return pending;
+
     return matching[0];
-  }, [currentUser, orders]);
+  }, [myOrders]);
 
   const updateOrderStatus = async (
     orderId: string,
@@ -1453,6 +1480,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ) => {
     const now = new Date().toISOString();
     const downloadAccessGranted = status === 'payment_confirmed' || status === 'completed';
+
+    const existingOrder = orders.find(o => o.id === orderId);
 
     const updates: Partial<Order> = {
       status,
@@ -1466,7 +1495,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setOrders(prev => prev.map(o => (o.id === orderId ? { ...o, ...updates } : o)));
 
     try {
-      await updateDoc(doc(db, 'orders', orderId), updates);
+      const payload = cleanForFirestore(existingOrder ? { ...existingOrder, ...updates } : updates);
+      await setDoc(doc(db, 'orders', orderId), payload, { merge: true });
     } catch (e) {
       console.warn('Firestore order update fallback:', e);
     }
@@ -1672,11 +1702,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isAdminAuthenticated,
         adminLogin,
         adminLogout,
+        browserClientId,
         currentUser,
         userProfile,
+        myOrders,
         isUserAuthLoading,
         isUserAuthModalOpen,
         setIsUserAuthModalOpen,
+        saveCustomerProfile,
+        linkOrderToMyBrowser,
+        refreshOrdersFromFirestore,
         userSignUp,
         userSignIn,
         userSignInWithGoogle,

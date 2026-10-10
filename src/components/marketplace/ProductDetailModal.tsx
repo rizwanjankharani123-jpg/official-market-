@@ -27,7 +27,8 @@ import {
   Heart,
   Globe,
   ExternalLink,
-  Play
+  Play,
+  CheckCircle2
 } from 'lucide-react';
 
 interface ProductDetailModalProps {
@@ -489,11 +490,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <button
                     onClick={() => {
                       onClose();
-                      setActiveView('track-order');
+                      setActiveView('my-dashboard');
                     }}
                     className="w-full py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-mono text-xs font-bold border border-amber-500/40 flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <span>Track Order & View Invoice 🔍</span>
+                    <span>Open My Orders Dashboard 🔍</span>
                   </button>
                 </div>
               ) : isFree ? (

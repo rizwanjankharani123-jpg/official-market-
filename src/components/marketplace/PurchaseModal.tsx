@@ -42,7 +42,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
   onClose,
   onOrderSuccess
 }) => {
-  const { paymentMethods, createOrder, settings, currentUser, setIsUserAuthModalOpen } = useApp();
+  const { paymentMethods, createOrder, settings, userProfile, setIsUserAuthModalOpen } = useApp();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [purchaseType, setPurchaseType] = useState<PurchaseType>(bundle ? 'bundle' : initialType);
   const [selectedMethodId, setSelectedMethodId] = useState<string>('');
@@ -50,31 +50,33 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
 
   // Step 3 inputs
   const [transactionId, setTransactionId] = useState('');
-  const [customerName, setCustomerName] = useState(currentUser?.displayName || '');
-  const [customerEmail, setCustomerEmail] = useState(currentUser?.email || '');
-  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerName, setCustomerName] = useState(userProfile?.displayName || '');
+  const [customerEmail, setCustomerEmail] = useState(userProfile?.email || '');
+  const [customerPhone, setCustomerPhone] = useState(userProfile?.phone || '');
   const [customerNote, setCustomerNote] = useState('');
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Auto-sync customer details with currentUser if logged in
+  // Auto-sync customer details with browser userProfile
   useEffect(() => {
-    if (currentUser) {
-      if (currentUser.displayName && !customerName) setCustomerName(currentUser.displayName);
-      if (currentUser.email && !customerEmail) setCustomerEmail(currentUser.email);
+    if (userProfile) {
+      if (userProfile.displayName && !customerName) setCustomerName(userProfile.displayName);
+      if (userProfile.phone && !customerPhone) setCustomerPhone(userProfile.phone);
+      if (userProfile.email && !customerEmail) setCustomerEmail(userProfile.email);
     }
-  }, [currentUser]);
+  }, [userProfile]);
 
   // Lottie-style Order Success State
   const [completedOrder, setCompletedOrder] = useState<{
     id: string;
+    customerName: string;
     email: string;
     amount: number;
     productName: string;
     trxId: string;
   } | null>(null);
-  const [countdown, setCountdown] = useState(4);
+  const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {
     if (bundle) {
@@ -88,7 +90,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setCompletedOrder(null);
-      setCountdown(4);
+      setCountdown(3);
       setStep(1);
       setErrorMessage('');
       setScreenshotPreview(null);
@@ -163,8 +165,8 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
       setErrorMessage('Please enter your payment Transaction / TRX ID.');
       return;
     }
-    if (!customerName.trim() || !customerEmail.trim()) {
-      setErrorMessage('Please enter your name and valid email address.');
+    if (!customerName.trim()) {
+      setErrorMessage('Please enter your Name so this order links to your profile.');
       return;
     }
     if (!screenshotPreview) {
@@ -221,12 +223,13 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
       // Switch to Lottie-Style Success State within the modal
       setCompletedOrder({
         id: order.id,
+        customerName: order.customerName,
         email: order.customerEmail,
         amount: order.amount,
         productName: order.productName,
         trxId: order.transactionId
       });
-      setCountdown(4);
+      setCountdown(3);
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to submit order. Please retry.');
     } finally {
@@ -350,28 +353,31 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                   <p className="text-emerald-400 font-bold">PKR {completedOrder.amount.toLocaleString()}</p>
                 </div>
                 <div>
-                  <p className="text-slate-400 text-[10px] uppercase">Account/Email:</p>
-                  <p className="text-slate-200 truncate">{completedOrder.email}</p>
+                  <p className="text-slate-400 text-[10px] uppercase">Customer Profile:</p>
+                  <p className="text-slate-200 font-bold truncate">{completedOrder.customerName}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-slate-400 text-[10px] uppercase">Reward Points:</p>
-                  <p className="text-amber-400 font-bold">+{pointsEarned} PTS</p>
+                  <p className="text-slate-400 text-[10px] uppercase">TRX Reference:</p>
+                  <p className="text-cyan-400 font-bold truncate">{completedOrder.trxId}</p>
                 </div>
               </div>
             </div>
 
-            {/* Countdown & Immediate Redirect Button */}
+            {/* Countdown & Immediate Redirect to Official Invoice */}
             <div className="space-y-3 max-w-lg mx-auto pt-2">
-              <div className="flex items-center justify-between text-xs font-mono text-slate-400">
-                <span>Auto-redirecting to Order Tracker...</span>
-                <span className="text-cyan-400 font-bold">{countdown}s</span>
+              <div className="flex items-center justify-between text-xs font-mono text-slate-300">
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                  <span>Generating Official Unique Invoice...</span>
+                </span>
+                <span className="text-cyan-400 font-black">{countdown}s</span>
               </div>
               
               {/* Animated Progress Bar */}
               <div className="w-full h-1.5 rounded-full bg-slate-900 overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-emerald-500 via-cyan-400 to-indigo-500 transition-all duration-1000 ease-linear"
-                  style={{ width: `${((4 - countdown) / 4) * 100}%` }}
+                  style={{ width: `${((3 - countdown) / 3) * 100}%` }}
                 />
               </div>
 
@@ -382,7 +388,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                 }}
                 className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-500 hover:brightness-110 text-black font-black text-xs font-mono transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30 btn-shimmer btn-glow-emerald cursor-pointer active:scale-95"
               >
-                <span>Track Order & Access Software Now</span>
+                <span>Open Official Invoice & Dashboard Now</span>
                 <ArrowRight className="w-4 h-4 text-black" />
               </button>
             </div>
@@ -640,26 +646,25 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
               <form onSubmit={handleFinishOrder} className="space-y-4 animate-in fade-in">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-mono text-slate-300">Your Full Name *</label>
+                    <label className="text-xs font-mono text-cyan-300 font-bold">Your Profile Name *</label>
                     <input
                       type="text"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                       placeholder="e.g. Muhammad Ali"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-cyan-400 focus:outline-none"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-cyan-500/40 text-white text-xs font-mono focus:border-cyan-400 focus:outline-none"
                       required
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-mono text-slate-300">Email Address (for Order & License) *</label>
+                    <label className="text-xs font-mono text-slate-300">Email Address (Optional)</label>
                     <input
                       type="email"
                       value={customerEmail}
                       onChange={(e) => setCustomerEmail(e.target.value)}
-                      placeholder="e.g. ali@example.com"
+                      placeholder="Optional (e.g. ali@example.com)"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-white text-xs font-mono focus:border-cyan-400 focus:outline-none"
-                      required
                     />
                   </div>
                 </div>

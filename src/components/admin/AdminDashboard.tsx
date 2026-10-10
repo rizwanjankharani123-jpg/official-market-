@@ -127,7 +127,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     updateSettings,
     adminLogout,
     setActiveView,
-    getProductSalesStats
+    getProductSalesStats,
+    refreshOrdersFromFirestore
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<
@@ -220,13 +221,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const totalProductViews = products.reduce((sum, p) => sum + (p.viewsCount || 0), 0);
   const totalProductDownloads = products.reduce((sum, p) => sum + (p.downloadsCount || 0), 0);
 
-  // Filtered orders list
+  // Filtered orders list (safe against any undefined strings)
   const filteredOrders = orders.filter((o) => {
     const matchesStatus = orderFilter === 'all' || o.status === orderFilter;
-    const matchesSearch = o.id.toLowerCase().includes(orderSearch.toLowerCase()) ||
-      o.customerName.toLowerCase().includes(orderSearch.toLowerCase()) ||
-      o.customerEmail.toLowerCase().includes(orderSearch.toLowerCase()) ||
-      o.transactionId.toLowerCase().includes(orderSearch.toLowerCase());
+    const q = orderSearch.toLowerCase();
+    const matchesSearch =
+      (o.id || '').toLowerCase().includes(q) ||
+      (o.customerName || '').toLowerCase().includes(q) ||
+      (o.customerEmail || '').toLowerCase().includes(q) ||
+      (o.transactionId || '').toLowerCase().includes(q);
     return matchesStatus && matchesSearch;
   });
 
@@ -819,6 +822,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <option value="payment_rejected">Payment Rejected</option>
                 <option value="completed">Completed</option>
               </select>
+
+              <button
+                onClick={() => refreshOrdersFromFirestore()}
+                className="px-3 py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 text-xs font-mono font-bold cursor-pointer"
+              >
+                Sync Live Orders
+              </button>
             </div>
           </div>
 
@@ -860,10 +870,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         {o.paymentMethodName} <span className="text-slate-500">•</span> {o.transactionId}
                       </td>
                       <td className="py-3 px-3"><StatusBadge status={o.status} /></td>
-                      <td className="py-3 px-3 text-right space-x-2">
+                      <td className="py-3 px-3 text-right space-x-1.5 whitespace-nowrap">
+                        {o.status !== 'payment_confirmed' && o.status !== 'completed' && (
+                          <button
+                            onClick={() => updateOrderStatus(o.id, 'payment_confirmed')}
+                            className="px-2.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-mono text-xs font-black cursor-pointer"
+                            title="1-Click Approve & Grant Paid APK Download Access"
+                          >
+                            Approve ✓
+                          </button>
+                        )}
+                        {o.status !== 'payment_rejected' && (
+                          <button
+                            onClick={() => updateOrderStatus(o.id, 'payment_rejected', 'Order cancelled / rejected by Admin.')}
+                            className="px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 font-mono text-xs font-bold cursor-pointer"
+                            title="Cancel / Reject Order"
+                          >
+                            Cancel ✕
+                          </button>
+                        )}
                         <button
                           onClick={() => setInspectingOrder(o)}
-                          className="px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-mono text-xs font-semibold border border-cyan-500/30 cursor-pointer"
+                          className="px-2.5 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-mono text-xs font-semibold border border-cyan-500/30 cursor-pointer"
                         >
                           Audit Proof
                         </button>

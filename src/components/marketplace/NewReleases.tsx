@@ -30,7 +30,7 @@ export const NewReleases: React.FC<NewReleasesProps> = ({
   onOpenDetails,
   limit = 6
 }) => {
-  const { products, getProductSalesStats, recordFreeDownload, setActiveView } = useApp();
+  const { products, getProductSalesStats, recordFreeDownload, setActiveView, getUserOrderForProduct } = useApp();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   // Filter ONLY published/active products from real Firestore collection
@@ -313,24 +313,61 @@ export const NewReleases: React.FC<NewReleasesProps> = ({
                         <Eye className="w-4 h-4" />
                       </button>
 
-                      {isFree ? (
-                        <button
-                          onClick={() => handleFreeDownload(product)}
-                          disabled={downloadingId === product.id}
-                          className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-50 btn-shimmer active:scale-95"
-                        >
-                          <DownloadCloud className="w-4 h-4 text-black" />
-                          <span>{downloadingId === product.id ? 'Downloading...' : isApk ? 'Download APK' : 'Download Free'}</span>
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => onSelectProduct(product, 'software')}
-                          className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 shadow-lg shadow-cyan-500/20 transition-all cursor-pointer btn-shimmer active:scale-95"
-                        >
-                          <span>{isApk ? 'Buy APK' : 'Buy Access'}</span>
-                          <ChevronRight className="w-4 h-4 text-black" />
-                        </button>
-                      )}
+                      {(() => {
+                        const existingOrder = getUserOrderForProduct(product.id);
+                        const isOrderConfirmed = existingOrder && (existingOrder.status === 'payment_confirmed' || existingOrder.status === 'completed');
+                        const isOrderPending = existingOrder && (existingOrder.status === 'proof_submitted' || existingOrder.status === 'under_review' || existingOrder.status === 'payment_pending');
+
+                        if (isOrderConfirmed) {
+                          return (
+                            <a
+                              href={existingOrder.downloadUrl || product.apkUrl || '#'}
+                              download={existingOrder.downloadName || `${product.name}.apk`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
+                            >
+                              <DownloadCloud className="w-4 h-4 text-black" />
+                              <span>Download APK 📥</span>
+                            </a>
+                          );
+                        }
+
+                        if (isOrderPending) {
+                          return (
+                            <button
+                              onClick={() => setActiveView('my-dashboard')}
+                              className="px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-extrabold text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer"
+                            >
+                              <Clock className="w-4 h-4 text-amber-400 animate-spin" />
+                              <span>Pending ⏳</span>
+                            </button>
+                          );
+                        }
+
+                        if (isFree) {
+                          return (
+                            <button
+                              onClick={() => handleFreeDownload(product)}
+                              disabled={downloadingId === product.id}
+                              className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-50 btn-shimmer active:scale-95"
+                            >
+                              <DownloadCloud className="w-4 h-4 text-black" />
+                              <span>{downloadingId === product.id ? 'Downloading...' : isApk ? 'Download APK' : 'Download Free'}</span>
+                            </button>
+                          );
+                        }
+
+                        return (
+                          <button
+                            onClick={() => onSelectProduct(product, 'software')}
+                            className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 shadow-lg shadow-cyan-500/20 transition-all cursor-pointer btn-shimmer active:scale-95"
+                          >
+                            <span>{isApk ? 'Buy APK' : 'Buy Access'}</span>
+                            <ChevronRight className="w-4 h-4 text-black" />
+                          </button>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>

@@ -2,10 +2,11 @@ import { Product, PortfolioProject, PaymentMethod, SiteSettings, Order, CustomRe
 
 export const INITIAL_SETTINGS: SiteSettings = {
   brandName: 'AFFY OFFICIAL',
+  brandLogoUrl: 'https://i.ibb.co/RGhd9Wx5/file-000000001ce881fabba7c0cb6405b5e3.png',
   developerName: 'Aftab',
   developerTitle: 'Web Developer & Software Developer',
   bio: "Hi, I'm Aftab. I build production-ready web platforms, Android APKs, and scalable software systems. AFFY OFFICIAL is my official platform for presenting, developing, and providing verified software applications, commercial source-code packages, and custom client engineering solutions.",
-  avatarUrl: 'https://i.ibb.co/rR2WdxJ0/1772950442657-1.jpg',
+  avatarUrl: 'https://i.ibb.co/RGhd9Wx5/file-000000001ce881fabba7c0cb6405b5e3.png',
   signatureUrl: 'https://i.ibb.co/4gThRdST/1000484283-removebg-preview.png',
   email: 'affyofficial.dev@gmail.com',
   phone: '+92 326 3724861',

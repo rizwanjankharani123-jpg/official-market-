@@ -268,7 +268,8 @@ export interface PaymentMethod {
 
 export interface Order {
   id: string; // e.g. AFFY-ORD-XXXXXX
-  userId?: string; // Firebase Auth User ID
+  browserClientId?: string; // Unique private browser token for strict per-browser isolation
+  userId?: string; // Customer Profile ID
   customerUid?: string;
   customerName: string;
   customerEmail: string;
@@ -318,8 +319,18 @@ export interface Quotation {
   createdAt: string;
 }
 
+export interface CustomLicenseConfig {
+  licenseTitle: string;
+  licenseSubtitle: string;
+  licenseTier: string;
+  allowedPermissions: string[];
+  restrictions: string[];
+  customOwnerNote: string;
+}
+
 export interface SiteSettings {
   brandName: string;
+  brandLogoUrl?: string;
   developerName: string;
   developerTitle: string;
   bio: string;
@@ -347,6 +358,8 @@ export interface SiteSettings {
   paymentTerms: string;
   refundPolicy: string;
   downloadTerms: string;
+  customApkLicense?: CustomLicenseConfig;
+  customSourceLicense?: CustomLicenseConfig;
 }
 
 export interface CertificateData {

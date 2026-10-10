@@ -26,6 +26,7 @@ import { PurchaseModal } from './components/marketplace/PurchaseModal';
 // Retention Views: Library & Rewards
 import { CustomerLibraryView } from './components/library/CustomerLibraryView';
 import { CustomerRewardsView } from './components/rewards/CustomerRewardsView';
+import { UserDashboardView } from './components/profile/UserDashboardView';
 
 // Phase D Expansion Views
 import { AnnouncementsView } from './components/announcements/AnnouncementsView';
@@ -221,11 +222,12 @@ const MainAppContent: React.FC = () => {
     setIsPurchaseModalOpen(true);
   };
 
-  // Handle order success from purchase modal
+  // Handle order success from purchase modal -> route to User's Personal Orders Dashboard AND automatically show the Official Unique Invoice
   const handleOrderSuccess = (orderId: string, email: string) => {
     setTrackingOrderId(orderId);
     setTrackingEmail(email);
-    setActiveView('track-order');
+    setActiveView('my-dashboard');
+    setSelectedInvoiceOrderId(orderId);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -237,10 +239,12 @@ const MainAppContent: React.FC = () => {
       )}
 
       {/* Top Main Navigation */}
-      <Navbar />
+      <div className={selectedInvoiceOrderId || selectedCertOrderId ? 'no-print' : ''}>
+        <Navbar />
+      </div>
 
       {/* Main View Router */}
-      <main className="flex-1 w-full">
+      <main className={`flex-1 w-full ${selectedInvoiceOrderId || selectedCertOrderId ? 'no-print' : ''}`}>
         {/* VIEW: HOME / COMPLETE OVERVIEW (Focused 100% on APKs, Apps & Marketplace) */}
         {activeView === 'home' && (
           <div className="space-y-4">
@@ -326,10 +330,10 @@ const MainAppContent: React.FC = () => {
           </div>
         )}
 
-        {/* VIEW: CUSTOMER DIGITAL LIBRARY / MY PURCHASES & UPDATES */}
-        {activeView === 'library' && (
+        {/* VIEW: CUSTOMER PERSONAL ORDERS DASHBOARD & APK VAULT */}
+        {(activeView === 'my-dashboard' || activeView === 'my-orders' || activeView === 'library') && (
           <div className="pt-6">
-            <CustomerLibraryView
+            <UserDashboardView
               onOpenCertificate={(id) => setSelectedCertOrderId(id)}
               onOpenInvoice={(id) => setSelectedInvoiceOrderId(id)}
             />
@@ -501,7 +505,9 @@ const MainAppContent: React.FC = () => {
       </main>
 
       {/* Global Footer */}
-      <Footer />
+      <div className={selectedInvoiceOrderId || selectedCertOrderId ? 'no-print' : ''}>
+        <Footer />
+      </div>
 
       {/* MODALS */}
       {/* 1. Product Detail Modal */}
